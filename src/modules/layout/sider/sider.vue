@@ -16,11 +16,11 @@ export const SIDE_COLLAPSED_WIDTH = 64
 </script>
 
 <template>
-  <Flex class="sider" dir="column">
-    <Flex class="top" :class="{ 'is-show': !appStore.siderCollapsed }" align="center">
-      <Flex class="icon" justify="center" align="center">Z</Flex>
+  <g-flex class="sider" dir="column">
+    <g-flex class="top" :class="{ 'is-show': !appStore.siderCollapsed }" align="center">
+      <g-flex class="icon" justify="center" align="center">Z</g-flex>
       <el-text class="title" type="primary">Zcc's 作品集</el-text>
-    </Flex>
+    </g-flex>
     <el-scrollbar height="100%">
       <el-menu
         class="w-[--side-width] border-r-0!"
@@ -34,7 +34,7 @@ export const SIDE_COLLAPSED_WIDTH = 64
         </template>
       </el-menu>
     </el-scrollbar>
-  </Flex>
+  </g-flex>
 </template>
 
 <style lang="scss" scoped>

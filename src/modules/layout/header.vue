@@ -69,9 +69,9 @@ function handleRightClick(tab: ITab, { clientX, clientY }: MouseEvent) {
 </script>
 
 <template>
-  <Flex class="header" dir="column">
-    <Flex justify="space-between" align="center">
-      <Flex align="center">
+  <g-flex class="header" dir="column">
+    <g-flex justify="space-between" align="center">
+      <g-flex align="center">
         <el-icon
           class="cursor-pointer"
           :size="20"
@@ -89,8 +89,8 @@ function handleRightClick(tab: ITab, { clientX, clientY }: MouseEvent) {
             {{ item.title }}
           </el-breadcrumb-item>
         </el-breadcrumb>
-      </Flex>
-      <Flex align="center">
+      </g-flex>
+      <g-flex align="center">
         <el-switch
           class="dark-switch"
           :model-value="!appStore.themeCfg.darkMode"
@@ -98,9 +98,9 @@ function handleRightClick(tab: ITab, { clientX, clientY }: MouseEvent) {
           :inactive-action-icon="Moon"
           @click="handleClickDarkSwitch"
         />
-      </Flex>
-    </Flex>
-    <Flex class="-my-10px" align="center">
+      </g-flex>
+    </g-flex>
+    <g-flex class="-my-10px" align="center">
       <el-button text @click="scrollbarRef?.setScrollLeft(scrollLeft - scrollOffset)">
         <el-icon>
           <ArrowLeft />
@@ -111,7 +111,7 @@ function handleRightClick(tab: ITab, { clientX, clientY }: MouseEvent) {
         class="mx-5px w-full py-10px h-auto!"
         @scroll="({ scrollLeft: val }) => (scrollLeft = val)"
       >
-        <Flex align="center">
+        <g-flex align="center">
           <el-tag
             v-for="tab in appStore.tabs"
             :key="tab.path"
@@ -126,15 +126,15 @@ function handleRightClick(tab: ITab, { clientX, clientY }: MouseEvent) {
           >
             {{ tab.title }}
           </el-tag>
-        </Flex>
+        </g-flex>
       </el-scrollbar>
       <el-button text @click="scrollbarRef?.setScrollLeft(scrollLeft + scrollOffset)">
         <el-icon>
           <ArrowRight />
         </el-icon>
       </el-button>
-    </Flex>
-  </Flex>
+    </g-flex>
+  </g-flex>
   <el-dropdown
     v-if="rightClickData.clientX"
     ref="dropdownRef"
@@ -145,7 +145,7 @@ function handleRightClick(tab: ITab, { clientX, clientY }: MouseEvent) {
     }"
     trigger="contextmenu"
   >
-    <Flex></Flex>
+    <g-flex></g-flex>
     <template #dropdown>
       <el-dropdown-menu>
         <el-dropdown-item @click="appStore.closeRightTabs(rightClickData.tab)">

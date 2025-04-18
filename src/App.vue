@@ -7,9 +7,9 @@
 <style lang="scss">
 #app {
   position: relative;
-  background-color: var(--el-bg-color);
   width: 100vw;
   height: 100vh;
+  background-color: var(--el-bg-color);
 }
 
 ::-webkit-scrollbar {

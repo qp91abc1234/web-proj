@@ -24,13 +24,13 @@ const marginLeft = computed(() => {
 </script>
 
 <template>
-  <Flex class="relative wh-full">
-    <Flex class="right-area wh-full" :style="{ 'margin-left': `${marginLeft}px` }" dir="column">
+  <g-flex class="relative wh-full">
+    <g-flex class="right-area wh-full" :style="{ 'margin-left': `${marginLeft}px` }" dir="column">
       <Header />
       <el-scrollbar height="100%">
         <RouterView />
       </el-scrollbar>
-    </Flex>
+    </g-flex>
     <div
       v-if="appStore.isMobile && !appStore.siderCollapsed"
       class="sider-overlay"
@@ -38,7 +38,7 @@ const marginLeft = computed(() => {
       @click="appStore.siderCollapsed = true"
     ></div>
     <Sider class="sider" ref="siderRef" :style="{ transform: `translateX(${translateX}px)` }" />
-  </Flex>
+  </g-flex>
 </template>
 
 <style lang="scss" scoped>
