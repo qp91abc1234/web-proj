@@ -6,7 +6,7 @@ import AutoImport from 'unplugin-auto-import/vite'
 import vueDevTools from 'vite-plugin-vue-devtools'
 import Components from 'unplugin-vue-components/vite'
 import { visualizer } from 'rollup-plugin-visualizer'
-import { NaiveUiResolver, ElementPlusResolver } from 'unplugin-vue-components/resolvers'
+import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 
 import type { ConfigEnv, UserConfig } from 'vite'
 
@@ -14,10 +14,10 @@ function getPlugins(viteEnv: Env.ImportMeta, isBuild: boolean) {
   let plugins = [
     vue(),
     AutoImport({
-      resolvers: [ElementPlusResolver(), NaiveUiResolver()]
+      resolvers: [ElementPlusResolver()]
     }),
     Components({
-      resolvers: [ElementPlusResolver(), NaiveUiResolver()]
+      resolvers: [ElementPlusResolver()]
     }),
     UnoCSS()
   ]

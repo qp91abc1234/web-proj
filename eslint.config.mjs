@@ -4,7 +4,6 @@ import tseslint from 'typescript-eslint'
 import pluginVue from 'eslint-plugin-vue'
 import unocss from '@unocss/eslint-config/flat'
 import eslintConfigPrettier from 'eslint-config-prettier'
-import importSortPlugin from 'eslint-plugin-for-sort-import'
 import eslintPluginPrettier from 'eslint-plugin-prettier/recommended'
 
 const ignoreCfg = {
@@ -59,7 +58,6 @@ export default [
   eslintPluginPrettier,
   eslintConfigPrettier,
   unocss,
-  importSortPlugin(),
   {
     rules: {
       'vue/multi-word-component-names': 'off',

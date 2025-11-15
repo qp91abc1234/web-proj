@@ -27,12 +27,11 @@ type DataConstants<T extends DataItem, P extends string> = {
 //   'DIALOG'
 // )
 
-export function createConstantsByList<T extends DataItem, P extends string = 'STATUS'>(
+export function createConstantsByList<T extends DataItem, P extends string>(
   list: T[],
   prefix: P = 'STATUS' as P
 ) {
   const statusList = list
-
   const statusKey = list.reduce((acc, item) => {
     acc[item.id.toUpperCase()] = item.id
     return acc

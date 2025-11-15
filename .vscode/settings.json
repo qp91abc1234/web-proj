@@ -1,0 +1,20 @@
+{
+  "eslint.enable": true,
+  "stylelint.enable": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit",
+    "source.fixAll.stylelint": "explicit"
+  },
+  "eslint.validate": ["javascript", "typescript", "vue"],
+  "stylelint.validate": ["css", "scss", "vue"],
+  "css.validate": false,
+  "scss.validate": false,
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.expand": false,
+  "explorer.fileNesting.patterns": {
+    "package.json": "pnpm-lock.yaml,.gitignore,components.d.ts,auto-imports.d.ts",
+    ".env": ".env.*",
+    "tsconfig.json": "tsconfig.*",
+    "vite.config.ts": "uno.config.ts,.editorconfig,.prettierrc,eslint.config.mjs,stylelint.config.mjs,.eslintignore,.stylelintignore"
+  },
+}

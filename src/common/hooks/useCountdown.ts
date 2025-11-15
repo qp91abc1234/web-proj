@@ -8,6 +8,7 @@ export function useCountDown(seconds: number = 60, cb?: () => void) {
   const _remainingTime = ref(seconds)
   const remainingTime = computed(() => Math.ceil(_remainingTime.value))
 
+  // Raf: requestAnimationFrame
   const { pause: pauseRaf, resume: resumeRaf } = useRafFn(
     () => {
       _remainingTime.value = seconds - (Date.now() - startTime) / 1000

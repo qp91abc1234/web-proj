@@ -2,28 +2,38 @@ import { usePermissionStore } from '@/store/modules/permissionStore'
 
 import type { Router } from 'vue-router'
 
+const layoutRouteName = Symbol('/')
+
 export async function buildAsyncRoutes(router: Router) {
   const permissionStore = usePermissionStore()
 
   permissionStore.routeList.forEach((item) => {
-    router.addRoute(allRoutesName, item)
+    router.addRoute(layoutRouteName, item)
   })
 }
 
-const allRoutesName = Symbol('/')
-export const allRoutes = {
-  path: '/',
-  redirect: '/home',
-  name: allRoutesName,
-  component: () => import('@/modules/layout/layout.vue'),
-  children: [
-    {
-      path: '/403',
-      component: () => import('@/views/error/error.vue'),
-      meta: {
-        visible: false,
-        title: '403'
-      }
+export const allRoutes = [
+  {
+    path: '/login',
+    component: () => import('@/views/login/login.vue'),
+    meta: {
+      visible: false,
+      title: '登录'
     }
-  ]
-}
+  },
+  {
+    path: '/',
+    redirect: '/home',
+    name: layoutRouteName,
+    component: () => import('@/modules/layout/layout.vue'),
+    children: []
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    component: () => import('@/views/error/error.vue'),
+    meta: {
+      visible: false,
+      title: '404'
+    }
+  }
+]

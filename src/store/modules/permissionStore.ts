@@ -21,19 +21,14 @@ export const usePermissionStore = defineStore('permission', () => {
       icon: 'Sunny'
     },
     {
-      path: 'demo',
-      title: '示例集合',
-      icon: 'Moon',
+      path: 'system',
+      title: '系统管理',
+      icon: 'Setting',
       children: [
         {
-          path: 'example',
-          title: '示例',
-          compPath: '/src/views/home/home.vue'
-        },
-        {
-          path: 'example2',
-          title: '示例2',
-          compPath: '/src/views/home/home.vue'
+          path: 'user',
+          title: '用户管理',
+          compPath: '/src/views/system/user.vue'
         }
       ]
     }

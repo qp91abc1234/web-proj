@@ -7,7 +7,11 @@
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
     "build:stat": "vite build --mode stat",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "eslint . --fix",
+    "lint:style": "stylelint \"src/**/*.{vue,scss,css}\" --fix",
+    "format": "prettier --write .",
+    "type-check": "vue-tsc --noEmit"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.1",
@@ -36,11 +40,9 @@
     "@vue/tsconfig": "^0.7.0",
     "eslint": "^9.17.0",
     "eslint-config-prettier": "^9.1.0",
-    "eslint-plugin-for-sort-import": "^1.0.5",
     "eslint-plugin-prettier": "^5.2.1",
     "eslint-plugin-vue": "^9.32.0",
     "globals": "^15.13.0",
-    "naive-ui": "^2.41.0",
     "postcss-html": "^1.8.0",
     "rollup-plugin-visualizer": "^5.13.1",
     "sass": "^1.83.0",

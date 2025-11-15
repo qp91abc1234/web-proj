@@ -9,7 +9,7 @@ import type { App } from 'vue'
 
 const router = createRouter({
   history: createWebHashHistory(),
-  routes: [allRoutes]
+  routes: allRoutes
 })
 
 router.beforeEach(async (to, _from, next) => {
@@ -26,7 +26,7 @@ router.beforeEach(async (to, _from, next) => {
     if (router.hasRoute(to.path)) {
       next({ path: to.path })
     } else {
-      next({ path: '/403' })
+      next({ path: '/404' })
     }
   } else {
     appStore.changeTab(
