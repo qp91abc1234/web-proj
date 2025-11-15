@@ -17,4 +17,7 @@
     "tsconfig.json": "tsconfig.*",
     "vite.config.ts": "uno.config.ts,.editorconfig,.prettierrc,eslint.config.mjs,stylelint.config.mjs,.eslintignore,.stylelintignore"
   },
+  "editor.quickSuggestions": {
+    "strings": "on"
+  }
 }

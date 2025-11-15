@@ -5,6 +5,7 @@
     "dbaeumer.vscode-eslint",
     "stylelint.vscode-stylelint",
     "eamodio.gitlens",
-    "mrmlnc.vscode-scss"
+    "mrmlnc.vscode-scss",
+    "antfu.unocss"
   ]
 }
