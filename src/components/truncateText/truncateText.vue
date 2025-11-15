@@ -11,7 +11,7 @@ withDefaults(
   }>(),
   {
     content: '',
-    placement: 'right',
+    placement: '',
     tooltip: true
   }
 )
@@ -20,11 +20,22 @@ const isTruncated = ref(true)
 </script>
 
 <template>
-  <el-tooltip :placement="placement" :disabled="!tooltip || !isTruncated" :content="content">
-    <span class="truncate" v-textTruncated="(val) => (isTruncated = val)">
-      {{ content }}
-    </span>
-  </el-tooltip>
+  <div>
+    <el-tooltip :placement="placement" :disabled="!tooltip || !isTruncated" :content="content">
+      <template #content> <slot name="content"></slot> </template>
+      <span class="truncate" v-textTruncated="(val) => (isTruncated = val)">
+        {{ content }}
+      </span>
+    </el-tooltip>
+  </div>
 </template>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.truncate {
+  display: inline-block;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+</style>
