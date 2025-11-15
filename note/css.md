@@ -1,4 +1,21 @@
 #### 文本截断
-单行截断三件套：overflow: hidden + text-overflow: ellipsis + white-space: nowrap
-配合块级或 inline-block：display: block 或 display: inline-block
-设置宽度：可以是 width、max-width 或者父元素限制宽度
+单行截断五要素
+```css
+.truncate-single {
+  width: 100%;              /* 1. 宽度限制 */
+  overflow: hidden;         /* 2. 隐藏溢出 */
+  text-overflow: ellipsis;  /* 3. 显示省略号 */
+  white-space: nowrap;      /* 4. 不换行 */
+  /* display: block/inline-block (隐含) */
+}
+```
+
+多行截断四要素
+```css
+.truncate-multiple {
+  display: -webkit-box;          /* 1. WebKit 盒子模型 */
+  -webkit-box-orient: vertical;  /* 2. 垂直排列 */
+  -webkit-line-clamp: 2;         /* 3. 显示行数 */
+  overflow: hidden;              /* 4. 隐藏溢出 */
+}
+```

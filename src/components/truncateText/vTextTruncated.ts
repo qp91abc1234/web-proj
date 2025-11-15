@@ -3,10 +3,26 @@ export const vTextTruncated = {
     const checkTruncated = () => {
       setTimeout(() => {
         // 延迟等待元素的样式计算
-        const value = el.scrollWidth > el.clientWidth
+        let isTruncated = false
+
+        // 对象：v-textTruncated="{ callback: (val) => xxx, lines: 2 }"
+        const callback = binding.value?.callback
+        const lines = binding.value?.lines || 1
+
+        // 根据行数判断截断方式
+        if (lines === 1) {
+          // 单行截断：比较宽度
+          isTruncated = el.scrollWidth > el.clientWidth
+        } else {
+          // 多行截断：比较高度
+          // 添加容差值避免精度问题（浏览器渲染可能有 1-2px 的误差）
+          const tolerance = 2
+          isTruncated = el.scrollHeight > el.clientHeight + tolerance
+        }
+
         // 调用回调函数
-        if (binding.value && typeof binding.value === 'function') {
-          binding.value(value)
+        if (callback && typeof callback === 'function') {
+          callback(isTruncated)
         }
       }, 0)
     }
