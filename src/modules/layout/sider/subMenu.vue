@@ -24,13 +24,13 @@ const props = withDefaults(
         :is="ElementPlusIconsVue[props.data.meta?.icon]"
         class="icon"
       ></component>
-      <span>{{ props.data.meta?.title || '' }}</span>
+      <TruncateText :content="props.data.meta?.title || ''"></TruncateText>
     </template>
     <template v-for="child in props.data.children" :key="child.path">
       <subMenu v-if="child.children" :data="child"></subMenu>
       <el-menu-item v-else-if="child.meta?.visible !== false" :index="child.path">
         <template #title>
-          <span>{{ child.meta?.title || '' }}</span>
+          <TruncateText :content="child.meta?.title || ''"></TruncateText>
         </template>
       </el-menu-item>
     </template>
