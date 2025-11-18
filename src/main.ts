@@ -3,7 +3,7 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import { setupPinia } from '@/store/index.ts'
 import { setupRouter } from '@/router/index.ts'
-import { setupGlobalComponents } from './gComponents'
+import { setupGlobalComponents } from './components'
 
 import 'normalize.css'
 import 'virtual:uno.css'
