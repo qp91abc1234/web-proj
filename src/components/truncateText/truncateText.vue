@@ -1,14 +1,7 @@
 <script setup lang="ts">
-import { ref, computed, useAttrs } from 'vue'
+import { ref, computed } from 'vue'
 
 import { vTextTruncated } from './vTextTruncated'
-
-// 注意：由于根元素是 el-tooltip（它自己禁用了 inheritAttrs）
-// 所以这里禁不禁用 inheritAttrs 其实没有区别
-// 但为了代码清晰，明确表示"我们要手动控制 class 的应用位置"，还是建议禁用
-defineOptions({
-  inheritAttrs: false
-})
 
 const props = withDefaults(
   defineProps<{
@@ -25,43 +18,32 @@ const props = withDefaults(
   }
 )
 
-const attrs = useAttrs()
 const isTruncated = ref(true)
 
-// 根据行数计算样式类名，合并外部传入的 class
+// 根据行数计算样式类名
 const truncateClass = computed(() => {
-  const baseClass = props.lines === 1 ? 'truncate-single' : 'truncate-multiple'
-  // 合并外部传入的 class
-  const externalClass = attrs.class || ''
-  return [baseClass, externalClass].filter(Boolean).join(' ')
-})
-
-// 计算合并后的 style
-const truncateStyle = computed(() => {
-  return {
-    '-webkit-line-clamp': props.lines,
-    ...((attrs.style as Record<string, any>) || {})
-  }
+  return props.lines === 1 ? 'truncate-single' : 'truncate-multiple'
 })
 </script>
 
 <template>
-  <el-tooltip :placement="placement" :disabled="!tooltip || !isTruncated" :content="content">
-    <template #content> <slot name="content"></slot> </template>
-    <span
-      :class="truncateClass"
-      :style="truncateStyle"
-      v-textTruncated="{ callback: (val) => (isTruncated = val), lines }"
-    >
-      {{ content }}
-    </span>
-  </el-tooltip>
+  <div>
+    <el-tooltip :placement="placement" :disabled="!tooltip || !isTruncated" :content="content">
+      <template #content> <slot name="content"></slot> </template>
+      <div
+        :class="truncateClass"
+        :style="{ '-webkit-line-clamp': lines }"
+        v-textTruncated="{ callback: (val) => (isTruncated = val), lines }"
+      >
+        {{ content }}
+      </div>
+    </el-tooltip>
+  </div>
 </template>
 
 <style lang="scss" scoped>
 /* 单行截断 */
 .truncate-single {
-  display: inline-block;
   width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
