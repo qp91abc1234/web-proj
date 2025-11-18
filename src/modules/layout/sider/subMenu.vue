@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 
-import TruncateText from '@/components/truncateText/truncateText.vue'
-
 import type { RouteRecordRaw } from 'vue-router'
 
 const props = withDefaults(
@@ -26,13 +24,13 @@ const props = withDefaults(
         :is="ElementPlusIconsVue[props.data.meta?.icon]"
         class="icon"
       ></component>
-      <TruncateText :content="props.data.meta?.title || ''"></TruncateText>
+      <span>{{ props.data.meta?.title || '' }}</span>
     </template>
     <template v-for="child in props.data.children" :key="child.path">
       <subMenu v-if="child.children" :data="child"></subMenu>
       <el-menu-item v-else-if="child.meta?.visible !== false" :index="child.path">
         <template #title>
-          <TruncateText :content="child.meta?.title || ''"></TruncateText>
+          <span>{{ child.meta?.title || '' }}</span>
         </template>
       </el-menu-item>
     </template>
@@ -44,7 +42,7 @@ const props = withDefaults(
       class="icon"
     ></component>
     <template #title>
-      <TruncateText :content="props.data.meta?.title || ''"></TruncateText>
+      <span>{{ props.data.meta?.title || '' }}</span>
     </template>
   </el-menu-item>
 </template>
