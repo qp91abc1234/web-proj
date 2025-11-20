@@ -1,41 +1,50 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, useSlots } from 'vue'
 
 import { vTextTruncated } from './vTextTruncated'
 
 const props = withDefaults(
   defineProps<{
-    content: string
     placement?: string
     tooltip?: boolean
     lines?: number // 显示行数，默认1行
   }>(),
   {
-    content: '',
-    placement: '',
+    placement: undefined,
     tooltip: true,
     lines: 1
   }
 )
 
+const slots = useSlots()
 const isTruncated = ref(true)
 
 // 根据行数计算样式类名
 const truncateClass = computed(() => {
   return props.lines === 1 ? 'truncate-single' : 'truncate-multiple'
 })
+
+// 判断是否存在 tooltip-content 插槽
+const hasTooltipContent = computed(() => {
+  return !!slots['tooltip-content']
+})
 </script>
 
 <template>
   <div>
-    <el-tooltip :placement="placement" :disabled="!tooltip || !isTruncated" :content="content">
-      <template #content> <slot name="content"></slot> </template>
+    <el-tooltip :placement="placement" :disabled="!tooltip || !isTruncated">
+      <template #content>
+        <!-- 如果提供了 tooltip-content 插槽则使用，否则使用默认插槽内容 -->
+        <slot v-if="hasTooltipContent" name="tooltip-content"></slot>
+        <slot v-else></slot>
+      </template>
       <div
         :class="truncateClass"
         :style="{ '-webkit-line-clamp': lines }"
         v-textTruncated="{ callback: (val) => (isTruncated = val), lines }"
       >
-        {{ content }}
+        <!-- 显示主要内容 -->
+        <slot></slot>
       </div>
     </el-tooltip>
   </div>
