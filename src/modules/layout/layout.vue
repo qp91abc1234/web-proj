@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 
 import Header from './header.vue'
 import { useAppStore } from '@/store/modules/appStore'
 import Sider, { SIDE_WIDTH, SIDE_COLLAPSED_WIDTH } from './sider/sider.vue'
 
 const appStore = useAppStore()
-const siderRef = ref<InstanceType<typeof Sider>>()
 
 const translateX = computed(() => {
   if (!appStore.isMobile) {
@@ -33,11 +32,11 @@ const marginLeft = computed(() => {
     </g-flex>
     <div
       v-if="appStore.isMobile && !appStore.siderCollapsed"
-      class="sider-overlay"
+      class="sider-shader"
       :style="{ opacity: appStore.siderCollapsed ? 0 : 1 }"
       @click="appStore.siderCollapsed = true"
     ></div>
-    <Sider class="sider" ref="siderRef" :style="{ transform: `translateX(${translateX}px)` }" />
+    <Sider class="sider" :style="{ transform: `translateX(${translateX}px)` }" />
   </g-flex>
 </template>
 
@@ -46,10 +45,9 @@ const marginLeft = computed(() => {
   transition: margin-left 0.3s ease-in-out;
 }
 
-.sider-overlay {
+.sider-shader {
   position: absolute;
-  top: 0;
-  left: 0;
+  z-index: mixin.$z-index-low;
   width: 100%;
   height: 100%;
   background-color: var(--el-overlay-color-lighter);
@@ -57,6 +55,8 @@ const marginLeft = computed(() => {
 }
 
 .sider {
+  position: absolute;
+  z-index: mixin.$z-index-low;
   transition: transform 0.3s ease-in-out;
 }
 </style>

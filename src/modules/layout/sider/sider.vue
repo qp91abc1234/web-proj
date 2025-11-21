@@ -39,10 +39,7 @@ export const SIDE_COLLAPSED_WIDTH = 64
 
 <style lang="scss" scoped>
 .sider {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
+  height: 100%;
   user-select: none;
   background-color: var(--el-bg-color);
   border-right: 1px solid var(--el-border-color);
