@@ -1,4 +1,14 @@
 <script setup lang="ts">
+import {
+  CircleCheck,
+  DataAnalysis,
+  Document,
+  Setting,
+  User,
+  UserFilled,
+  View,
+  Warning
+} from '@element-plus/icons-vue'
 import { ref, computed } from 'vue'
 
 const currentTime = ref(new Date())
@@ -36,18 +46,18 @@ const formattedTime = computed(() => {
 
 // 统计数据
 const statistics = ref([
-  { title: '今日访问', value: 1234, icon: 'View', color: '#409eff' },
-  { title: '今日订单', value: 56, icon: 'Document', color: '#67c23a' },
-  { title: '待处理', value: 8, icon: 'Warning', color: '#e6a23c' },
-  { title: '总用户数', value: 5678, icon: 'User', color: '#f56c6c' }
+  { title: '今日访问', value: 1234, icon: View, color: '#409eff' },
+  { title: '今日订单', value: 56, icon: Document, color: '#67c23a' },
+  { title: '待处理', value: 8, icon: Warning, color: '#e6a23c' },
+  { title: '总用户数', value: 5678, icon: User, color: '#f56c6c' }
 ])
 
 // 快捷入口
 const shortcuts = ref([
-  { title: '用户管理', icon: 'User', path: '/system/user' },
-  { title: '角色管理', icon: 'UserFilled', path: '/system/role' },
-  { title: '系统设置', icon: 'Setting', path: '/system/setting' },
-  { title: '数据统计', icon: 'DataAnalysis', path: '/data/statistics' }
+  { title: '用户管理', icon: User, path: '/system/user' },
+  { title: '角色管理', icon: UserFilled, path: '/system/role' },
+  { title: '系统设置', icon: Setting, path: '/system/setting' },
+  { title: '数据统计', icon: DataAnalysis, path: '/data/statistics' }
 ])
 </script>
 
