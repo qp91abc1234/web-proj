@@ -1,48 +1,65 @@
 import { ref, onScopeDispose } from 'vue'
+import { debounce } from 'lodash-es'
+
+/** 参考 Bootstrap 的响应式设计：992px 及以下为移动端 */
+const MAX_MOBILE_WIDTH = 992
+
+/** 移动设备 User Agent 正则 */
+const MOBILE_USER_AGENT_REGEX =
+  /ipad|iphone|midp|rv:1\.2\.3\.4|ucweb|android|windows ce|windows mobile/i
 
 export function useMobile() {
   const isMobile = ref(false)
 
-  const judgeBySize = () => {
-    /** 参考 Bootstrap 的响应式设计将最大移动端宽度设置为 992 */
-    const MAX_MOBILE_WIDTH = 992
-    const rect = document.body.getBoundingClientRect()
-    return rect.width - 1 < MAX_MOBILE_WIDTH
+  /**
+   * 根据屏幕宽度判断是否为移动端
+   */
+  const isMobileBySize = (): boolean => {
+    const bodyWidth = document.body.getBoundingClientRect().width
+    return bodyWidth <= MAX_MOBILE_WIDTH
   }
 
-  const isPCPlatform = (userAgent?: string): boolean => {
+  /**
+   * 根据 User Agent 判断是否为移动设备
+   * @returns true: 移动设备, false: PC设备
+   */
+  const isMobileByUserAgent = (): boolean => {
     try {
-      const sUserAgent = userAgent || navigator.userAgent.toLowerCase()
-      let isPC = true
-
-      if (
-        /ipad|iphone|iPhone|midp|rv:1.2.3.4|ucweb|android|Android|windows ce|windows mobile/.test(
-          sUserAgent
-        )
-      ) {
-        isPC = false
-      }
-
-      return isPC
+      const userAgent = navigator.userAgent
+      return MOBILE_USER_AGENT_REGEX.test(userAgent)
     } catch {
-      return true
+      // 异常情况默认为 PC
+      return false
     }
   }
 
-  const resizeHandler = () => {
-    isMobile.value = !isPCPlatform()
-    if (!isMobile.value && !document.hidden) {
-      isMobile.value = judgeBySize()
+  /**
+   * 综合判断设备类型
+   * 优先级：User Agent > 屏幕尺寸
+   */
+  const checkIsMobile = debounce(() => {
+    // 如果 UA 识别为移动设备，直接判定为移动端
+    if (isMobileByUserAgent()) {
+      isMobile.value = true
+      return
     }
-  }
 
-  window.addEventListener('resize', resizeHandler)
+    // 否则根据屏幕尺寸判断
+    isMobile.value = isMobileBySize()
+  }, 150)
 
+  // 监听窗口大小变化
+  window.addEventListener('resize', checkIsMobile)
+
+  // 清理事件监听
   onScopeDispose(() => {
-    window.removeEventListener('resize', resizeHandler)
+    // 取消未执行的防抖调用
+    checkIsMobile.cancel()
+    window.removeEventListener('resize', checkIsMobile)
   })
 
-  resizeHandler()
+  // 初始化判断
+  checkIsMobile()
 
   return {
     isMobile
