@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 
 import { useTabs } from './hooks/useTabs'
-import { useVConsole } from './hooks/vconsole'
+import { useVConsole } from './hooks/useVconsole'
 import { useTheme } from '@/store/modules/hooks/useTheme'
 import { useMobile } from '@/store/modules/hooks/useMobile'
 

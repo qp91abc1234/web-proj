@@ -8,7 +8,7 @@ export interface ITab {
   path: string
 }
 
-export const useTabs = () => {
+export function useTabs() {
   const router = useRouter()
   const permissionStore = usePermissionStore()
   const curTabPath = createStorageRef('curTabPath', '')
