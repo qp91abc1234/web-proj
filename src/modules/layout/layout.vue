@@ -1,11 +1,14 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch, nextTick } from 'vue'
+import { useRoute } from 'vue-router'
 
 import Header from './header.vue'
 import { useAppStore } from '@/store/modules/appStore'
 import Sider, { SIDE_WIDTH, SIDE_COLLAPSED_WIDTH } from './sider/sider.vue'
 
 const appStore = useAppStore()
+const route = useRoute()
+const scrollbarRef = ref()
 
 const translateX = computed(() => {
   if (!appStore.isMobile) {
@@ -20,13 +23,24 @@ const marginLeft = computed(() => {
   }
   return appStore.siderCollapsed ? SIDE_COLLAPSED_WIDTH : SIDE_WIDTH
 })
+
+// 监听路由变化，更新滚动条状态
+watch(
+  () => route.path,
+  () => {
+    nextTick(() => {
+      scrollbarRef.value?.update()
+      scrollbarRef.value?.setScrollTop(0)
+    })
+  }
+)
 </script>
 
 <template>
   <g-flex class="relative wh-full">
     <g-flex class="right-area wh-full" :style="{ 'margin-left': `${marginLeft}px` }" dir="column">
       <Header />
-      <el-scrollbar class="content-scrollbar" height="100%">
+      <el-scrollbar ref="scrollbarRef" class="content-scrollbar" height="100%">
         <RouterView />
       </el-scrollbar>
     </g-flex>
