@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
-import type { FormInstance } from 'element-plus'
+import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus'
+import { Delete, Edit, Plus, Refresh, Search } from '@element-plus/icons-vue'
 
 interface User {
   id: number
@@ -129,7 +130,7 @@ const handleSave = async (formEl: FormInstance | undefined) => {
         // 编辑
         const index = tableData.value.findIndex((item) => item.id === userForm.id)
         if (index > -1) {
-          tableData.value[index] = { ...userForm }
+          tableData.value[index] = { ...tableData.value[index], ...userForm }
           ElMessage.success('编辑成功')
         }
       } else {
@@ -205,7 +206,7 @@ const handleCurrentChange = (val: number) => {
 
     <!-- 表格 -->
     <el-card class="table-card">
-      <el-table v-loading="loading" :data="tableData" border stripe>
+      <el-table v-loading="loading" :data="tableData" stripe border>
         <el-table-column type="index" label="序号" width="60" align="center" />
         <el-table-column prop="username" label="用户名" min-width="120" />
         <el-table-column prop="realName" label="真实姓名" min-width="120" />
@@ -230,9 +231,7 @@ const handleCurrentChange = (val: number) => {
         <el-table-column prop="createTime" label="创建时间" min-width="170" />
         <el-table-column label="操作" width="180" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button type="primary" link :icon="Edit" @click="handleEdit(row)">
-              编辑
-            </el-button>
+            <el-button type="primary" link :icon="Edit" @click="handleEdit(row)"> 编辑 </el-button>
             <el-button type="danger" link :icon="Delete" @click="handleDelete(row)">
               删除
             </el-button>
@@ -342,4 +341,3 @@ const handleCurrentChange = (val: number) => {
   }
 }
 </style>
-

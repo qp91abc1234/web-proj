@@ -28,12 +28,14 @@ const scrollOffset = ref(50)
 const rightClickData = ref<RightClickData>({} as RightClickData)
 
 const breadcrumbList = computed(() => {
-  return route.path
-    .split('/')
-    .slice(1)
-    .map((path) => {
-      return permissionStore.routeMap[path]
+  const pathSegments = route.path.split('/').slice(1)
+  let currentPath = ''
+  return pathSegments
+    .map((segment) => {
+      currentPath += `/${segment}`
+      return permissionStore.routeMap[currentPath]
     })
+    .filter(Boolean)
 })
 
 function handleClickDarkSwitch({ clientX, clientY }: PointerEvent) {

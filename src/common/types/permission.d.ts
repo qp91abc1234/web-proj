@@ -1,5 +1,5 @@
 export type IBtnPermissionList = { code: string; name: string; hidden: boolean }[]
-export type IBtnPermisionMap = { [key: string]: { name: string; hidden: boolean } }
+export type IBtnPermissionMap = { [key: string]: { name: string; hidden: boolean } }
 
 export interface IRouteData {
   path: string
