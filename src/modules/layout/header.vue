@@ -8,13 +8,13 @@ import { usePermissionStore } from '@/store/modules/permissionStore'
 
 import { setCssVar } from '@/common/utils/css'
 
-import type { ITab } from '@/store/modules/hooks/useTabs'
+import type { Tab } from '@/store/modules/hooks/useTabs'
 import type { ElDropdown, ElScrollbar } from 'element-plus'
 
 type RightClickData = {
   clientX: string
   clientY: string
-  tab: ITab
+  tab: Tab
 }
 
 const route = useRoute()
@@ -58,7 +58,7 @@ function handleClickDarkSwitch({ clientX, clientY }: PointerEvent) {
   }
 }
 
-function handleRightClick(tab: ITab, { clientX, clientY }: MouseEvent) {
+function handleRightClick(tab: Tab, { clientX, clientY }: MouseEvent) {
   rightClickData.value = {
     clientX: `${clientX}px`,
     clientY: `${clientY}px`,

@@ -19,10 +19,10 @@ router.beforeEach(async (to, _from, next) => {
   // const userStore = useUserStore()
 
   // if (userStore.token) {
-  if (!permissionStore.isAuth) {
-    await permissionStore.getPermission()
+  if (!permissionStore.isInitialized) {
+    await permissionStore.initPermissions()
     await buildAsyncRoutes(router)
-    permissionStore.isAuth = true
+    permissionStore.isInitialized = true
   }
 
   if (to.matched.length === 0) {

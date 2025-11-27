@@ -3,15 +3,16 @@ import { defineStore } from 'pinia'
 
 import type { RouteRecordRaw } from 'vue-router'
 import type {
-  IRouteDataArr,
-  IBtnPermissionMap,
-  IBtnPermissionList
+  RouteConfigList,
+  ButtonPermissionMap,
+  ButtonPermissionList
 } from '@/common/types/permission'
 
-const modules = import.meta.glob('@/views/*/*.vue')
+// 视图组件模块映射（用于动态导入）
+const viewComponentModules = import.meta.glob('@/views/*/*.vue')
 
 // 路由配置数据（实际项目中应该从后端获取）
-const ROUTE_CONFIG: IRouteDataArr = [
+const ROUTE_CONFIG: RouteConfigList = [
   {
     path: 'home',
     title: '首页',
@@ -33,60 +34,60 @@ const ROUTE_CONFIG: IRouteDataArr = [
 ]
 
 export const usePermissionStore = defineStore('permission', () => {
-  // 是否已认证
-  const isAuth = ref(false)
+  // 权限是否已初始化
+  const isInitialized = ref(false)
   // 按钮权限映射表
-  const buttonPermissionMap = ref<IBtnPermissionMap>({})
+  const buttonPermissionMap = ref<ButtonPermissionMap>({})
   // 路由树
   const routeTree = ref<RouteRecordRaw[]>([])
   // 路由映射表（用于面包屑等场景）
   const routeMap = ref<Record<string, { title: string; jumpPath: string | undefined }>>({})
 
   /**
-   * 获取权限数据并构建路由树
+   * 初始化权限数据并构建路由树
    * TODO: 实际项目中应该从后端接口获取权限数据
    */
-  async function getPermission() {
+  async function initPermissions() {
     // TODO: 这里应该调用接口获取按钮权限列表
     // const buttonList = await fetchButtonPermissions()
-    buildButtonPermission([])
+    initButtonPermissions([])
 
     // 构建路由树
     buildRouteTree(ROUTE_CONFIG, routeTree.value)
   }
 
   /**
-   * 构建按钮权限映射表
+   * 初始化按钮权限映射表
    * @param buttonList 按钮权限列表
    */
-  function buildButtonPermission(buttonList: IBtnPermissionList) {
+  function initButtonPermissions(buttonList: ButtonPermissionList) {
     buttonPermissionMap.value = {}
-    buttonList.forEach((item) => {
-      buttonPermissionMap.value[item.code] = {
-        name: item.name,
-        hidden: item.hidden
+    buttonList.forEach((button) => {
+      buttonPermissionMap.value[button.code] = {
+        name: button.name,
+        hidden: button.hidden
       }
     })
   }
 
   /**
    * 递归构建路由树
-   * @param routeDataArr 路由配置数组
+   * @param routeConfigs 路由配置数组
    * @param routes 存放路由的容器
    * @param parentPath 父级路径
    * @returns 返回是否所有子路由都被禁用及第一个可见路径
    */
   function buildRouteTree(
-    routeDataArr: IRouteDataArr,
+    routeConfigs: RouteConfigList,
     routes: RouteRecordRaw[] = [],
     parentPath = '/'
   ): { allDisabled: boolean; firstVisiblePath: string } {
     let allDisabled = true
     let firstVisiblePath = ''
 
-    for (const item of routeDataArr) {
-      const isDisabled = item.disabled ?? false
-      const isVisible = item.visible ?? true
+    for (const routeConfig of routeConfigs) {
+      const isDisabled = routeConfig.disabled ?? false
+      const isVisible = routeConfig.visible ?? true
 
       // 跳过被禁用的路由
       if (isDisabled) {
@@ -96,17 +97,17 @@ export const usePermissionStore = defineStore('permission', () => {
 
       // 构建完整路由路径
       const routePath = parentPath.endsWith('/')
-        ? `${parentPath}${item.path}`
-        : `${parentPath}/${item.path}`
+        ? `${parentPath}${routeConfig.path}`
+        : `${parentPath}/${routeConfig.path}`
 
-      // 构建路由对象
-      const routeObj: any = {
+      // 构建路由记录对象
+      const routeRecord: any = {
         path: routePath,
         name: routePath,
-        component: item.compPath ? modules[item.compPath] : undefined,
+        component: routeConfig.compPath ? viewComponentModules[routeConfig.compPath] : undefined,
         meta: {
-          title: item.title,
-          icon: item.icon,
+          title: routeConfig.title,
+          icon: routeConfig.icon,
           visible: isVisible
         }
       }
@@ -117,10 +118,10 @@ export const usePermissionStore = defineStore('permission', () => {
       }
 
       // 处理子路由
-      if (!item.compPath && item.children && item.children.length > 0) {
-        routeObj.children = []
+      if (!routeConfig.compPath && routeConfig.children && routeConfig.children.length > 0) {
+        routeRecord.children = []
         const { allDisabled: childAllDisabled, firstVisiblePath: childFirstVisiblePath } =
-          buildRouteTree(item.children, routeObj.children, routePath)
+          buildRouteTree(routeConfig.children, routeRecord.children, routePath)
 
         // 如果所有子路由都被禁用，跳过当前路由
         if (childAllDisabled) {
@@ -129,20 +130,20 @@ export const usePermissionStore = defineStore('permission', () => {
 
         // 设置重定向到第一个可见的子路由
         if (childFirstVisiblePath) {
-          routeObj.redirect = childFirstVisiblePath
+          routeRecord.redirect = childFirstVisiblePath
         } else {
           // 如果没有可见的子路由，隐藏父路由
-          routeObj.meta!.visible = false
+          routeRecord.meta!.visible = false
         }
       }
 
       // 使用完整路径作为 key，避免重复
       routeMap.value[routePath] = {
-        title: item.title,
-        jumpPath: routeObj.redirect || routeObj.path
+        title: routeConfig.title,
+        jumpPath: routeRecord.redirect || routeRecord.path
       }
 
-      routes.push(routeObj)
+      routes.push(routeRecord)
     }
 
     return { allDisabled, firstVisiblePath }
@@ -152,18 +153,18 @@ export const usePermissionStore = defineStore('permission', () => {
    * 重置权限状态
    */
   function reset() {
-    isAuth.value = false
+    isInitialized.value = false
     buttonPermissionMap.value = {}
     routeTree.value = []
     routeMap.value = {}
   }
 
   return {
-    isAuth,
+    isInitialized,
     buttonPermissionMap,
     routeTree,
     routeMap,
-    getPermission,
+    initPermissions,
     reset
   }
 })

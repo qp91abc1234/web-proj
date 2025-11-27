@@ -5,7 +5,7 @@ import { usePermissionStore } from '../permissionStore'
 import { createStorageRef } from '@/common/utils/storage'
 
 /** 标签页数据结构 */
-export interface ITab {
+export interface Tab {
   /** 标签页标题 */
   title: string
   /** 路由路径 */
@@ -15,7 +15,7 @@ export interface ITab {
 /**
  * 获取默认标签页（首页）
  */
-function getDefaultTab(permissionStore: ReturnType<typeof usePermissionStore>): ITab {
+function getDefaultTab(permissionStore: ReturnType<typeof usePermissionStore>): Tab {
   const firstRoute = permissionStore.routeTree[0]
   return {
     title: (firstRoute?.meta?.title as string) || '首页',
@@ -45,7 +45,7 @@ export function useTabs() {
   const permissionStore = usePermissionStore()
 
   const currentTabPath = createStorageRef('currentTabPath', '')
-  const tabs = createStorageRef<ITab[]>('tabs', [])
+  const tabs = createStorageRef<Tab[]>('tabs', [])
 
   /**
    * 检查标签页是否存在
@@ -71,7 +71,7 @@ export function useTabs() {
    * @param tab - 标签页信息
    * @param navigate - 是否触发路由跳转，默认为 true
    */
-  const openTab = (tab: ITab, navigate = true): void => {
+  const openTab = (tab: Tab, navigate = true): void => {
     // 如果已经是当前标签页，不做处理
     if (currentTabPath.value === tab.path) {
       return
@@ -95,7 +95,7 @@ export function useTabs() {
    * 关闭指定标签页
    * @param tab - 要关闭的标签页
    */
-  const closeTab = (tab: ITab): void => {
+  const closeTab = (tab: Tab): void => {
     const closingIndex = findTabIndex(tab.path)
     const isClosingCurrent = currentTabPath.value === tab.path
 
@@ -120,7 +120,7 @@ export function useTabs() {
    * 关闭指定标签页右侧的所有标签页
    * @param tab - 参考标签页
    */
-  const closeRightTabs = (tab: ITab): void => {
+  const closeRightTabs = (tab: Tab): void => {
     const targetIndex = findTabIndex(tab.path)
     if (targetIndex === -1) return
 
@@ -139,7 +139,7 @@ export function useTabs() {
    * 关闭除指定标签页外的所有标签页
    * @param tab - 要保留的标签页
    */
-  const closeOtherTabs = (tab: ITab): void => {
+  const closeOtherTabs = (tab: Tab): void => {
     tabs.value = [tab]
     openTab(tab)
   }

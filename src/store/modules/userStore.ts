@@ -5,7 +5,7 @@ import { createStorageRef } from '@/common/utils/storage'
 import { req } from '@/common/utils/request'
 
 /** 登录请求参数 */
-interface ILoginParams {
+interface LoginParams {
   /** 用户名 */
   username: string
   /** 密码 */
@@ -13,7 +13,7 @@ interface ILoginParams {
 }
 
 /** 认证响应数据 */
-interface IAuthResponse {
+interface AuthResponse {
   /** 访问令牌 */
   token: string
   /** 刷新令牌 */
@@ -60,10 +60,10 @@ export const useUserStore = defineStore('user', () => {
    * @param params - 登录参数
    * @throws 登录失败时抛出错误
    */
-  async function login(params: ILoginParams): Promise<void> {
+  async function login(params: LoginParams): Promise<void> {
     const { username, password } = params
 
-    const res = await req.post<IAuthResponse>('/auth/login', {
+    const res = await req.post<AuthResponse>('/auth/login', {
       username,
       password
     })
@@ -83,7 +83,7 @@ export const useUserStore = defineStore('user', () => {
       throw new Error('No refresh token available')
     }
 
-    const res = await req.post<IAuthResponse>('/auth/refresh', {
+    const res = await req.post<AuthResponse>('/auth/refresh', {
       refreshToken: refreshToken.value
     })
 
