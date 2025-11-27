@@ -6,19 +6,15 @@ const layoutRouteName = Symbol('/')
 
 export async function buildAsyncRoutes(router: Router) {
   const permissionStore = usePermissionStore()
+  if (permissionStore.isInitialized) {
+    return
+  }
 
+  await permissionStore.initPermissions()
   permissionStore.routeTree.forEach((item) => {
     router.addRoute(layoutRouteName, item)
   })
-
-  router.addRoute({
-    path: '/:pathMatch(.*)*',
-    component: () => import('@/views/error/error.vue'),
-    meta: {
-      visible: false,
-      title: '404'
-    }
-  })
+  permissionStore.isInitialized = true
 }
 
 export const allRoutes = [

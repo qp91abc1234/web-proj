@@ -1,7 +1,6 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 
 import { useAppStore } from '@/store/modules/appStore'
-import { usePermissionStore } from '@/store/modules/permissionStore'
 
 import { allRoutes, buildAsyncRoutes } from './routeSetting'
 
@@ -14,16 +13,11 @@ const router = createRouter({
 })
 
 router.beforeEach(async (to, _from, next) => {
-  const permissionStore = usePermissionStore()
   const appStore = useAppStore()
   // const userStore = useUserStore()
 
   // if (userStore.token) {
-  if (!permissionStore.isInitialized) {
-    await permissionStore.initPermissions()
-    await buildAsyncRoutes(router)
-    permissionStore.isInitialized = true
-  }
+  await buildAsyncRoutes(router)
 
   if (to.matched.length === 0) {
     if (router.hasRoute(to.path)) {

@@ -11,6 +11,13 @@ import type {
 // 视图组件模块映射（用于动态导入）
 const viewComponentModules = import.meta.glob('@/views/*/*.vue')
 
+const ERROR_ROUTE = {
+  path: ':pathMatch(.*)*',
+  title: '404',
+  compPath: '/src/views/error/error.vue',
+  visible: false
+}
+
 // 路由配置数据（实际项目中应该从后端获取）
 const ROUTE_CONFIG: RouteConfigList = [
   {
@@ -53,7 +60,7 @@ export const usePermissionStore = defineStore('permission', () => {
     initButtonPermissions([])
 
     // 构建路由树
-    buildRouteTree(ROUTE_CONFIG, routeTree.value)
+    buildRouteTree(ROUTE_CONFIG.concat(ERROR_ROUTE), routeTree.value)
   }
 
   /**
