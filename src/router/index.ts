@@ -6,6 +6,7 @@ import { usePermissionStore } from '@/store/modules/permissionStore'
 import { allRoutes, buildAsyncRoutes } from './routeSetting'
 
 import type { App } from 'vue'
+// import { useUserStore } from '@/store/modules/userStore'
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -15,7 +16,9 @@ const router = createRouter({
 router.beforeEach(async (to, _from, next) => {
   const permissionStore = usePermissionStore()
   const appStore = useAppStore()
+  // const userStore = useUserStore()
 
+  // if (userStore.token) {
   if (!permissionStore.isAuth) {
     await permissionStore.getPermission()
     await buildAsyncRoutes(router)
@@ -28,8 +31,10 @@ router.beforeEach(async (to, _from, next) => {
     } else {
       next({ path: '/404' })
     }
+  } else if (to.path === '/login') {
+    next({ path: '/home' })
   } else {
-    appStore.changeTab(
+    appStore.openTab(
       {
         title: to.meta.title || '',
         path: to.path
@@ -38,6 +43,11 @@ router.beforeEach(async (to, _from, next) => {
     )
     next()
   }
+  // } else if (to.path !== '/login') {
+  //   next({ path: '/login' })
+  // } else {
+  //   next()
+  // }
 })
 
 export const setupRouter = (app: App<Element>) => {
