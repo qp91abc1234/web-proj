@@ -24,6 +24,14 @@ const marginLeft = computed(() => {
   return appStore.siderCollapsed ? SIDE_COLLAPSED_WIDTH : SIDE_WIDTH
 })
 
+const contentWidth = computed(() => {
+  if (appStore.isMobile) {
+    return '100%'
+  }
+  const sideWidth = appStore.siderCollapsed ? SIDE_COLLAPSED_WIDTH : SIDE_WIDTH
+  return `calc(100% - ${sideWidth}px)`
+})
+
 // 监听路由变化，更新滚动条状态
 watch(
   () => route.path,
@@ -38,7 +46,11 @@ watch(
 
 <template>
   <g-flex class="relative wh-full">
-    <g-flex class="right-area wh-full" :style="{ 'margin-left': `${marginLeft}px` }" dir="column">
+    <g-flex
+      class="right-area h-full"
+      :style="{ 'margin-left': `${marginLeft}px`, width: contentWidth }"
+      dir="column"
+    >
       <Header />
       <el-scrollbar ref="scrollbarRef" class="content-scrollbar" height="100%">
         <RouterView />
@@ -56,7 +68,9 @@ watch(
 
 <style lang="scss" scoped>
 .right-area {
-  transition: margin-left 0.3s ease-in-out;
+  transition:
+    margin-left 0.3s ease-in-out,
+    width 0.3s ease-in-out;
 }
 
 .content-scrollbar {

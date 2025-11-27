@@ -206,19 +206,19 @@ const handleCurrentChange = (val: number) => {
 
     <!-- 表格 -->
     <el-card class="table-card">
-      <el-table v-loading="loading" :data="tableData" stripe border>
-        <el-table-column type="index" label="序号" width="60" align="center" />
-        <el-table-column prop="username" label="用户名" min-width="120" />
-        <el-table-column prop="realName" label="真实姓名" min-width="120" />
-        <el-table-column prop="email" label="邮箱" min-width="180" />
+      <el-table v-loading="loading" :data="tableData" stripe>
+        <el-table-column type="index" label="序号" width="80" align="center" />
+        <el-table-column prop="username" label="用户名" min-width="120" show-overflow-tooltip />
+        <el-table-column prop="realName" label="真实姓名" min-width="120" show-overflow-tooltip />
+        <el-table-column prop="email" label="邮箱" min-width="200" show-overflow-tooltip />
         <el-table-column prop="phone" label="手机号" min-width="130" />
-        <el-table-column prop="role" label="角色" width="100">
+        <el-table-column prop="role" label="角色" width="100" align="center">
           <template #default="{ row }">
             <el-tag v-if="row.role === 'admin'" type="danger">管理员</el-tag>
             <el-tag v-else type="primary">普通用户</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="status" label="状态" width="100">
+        <el-table-column prop="status" label="状态" width="100" align="center">
           <template #default="{ row }">
             <el-switch
               v-model="row.status"
@@ -228,13 +228,11 @@ const handleCurrentChange = (val: number) => {
             />
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="创建时间" min-width="170" />
-        <el-table-column label="操作" width="180" fixed="right" align="center">
+        <el-table-column prop="createTime" label="创建时间" min-width="170" show-overflow-tooltip />
+        <el-table-column label="操作" width="150" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button type="primary" link :icon="Edit" @click="handleEdit(row)"> 编辑 </el-button>
-            <el-button type="danger" link :icon="Delete" @click="handleDelete(row)">
-              删除
-            </el-button>
+            <el-button type="primary" link :icon="Edit" @click="handleEdit(row)">编辑</el-button>
+            <el-button type="danger" link :icon="Delete" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
