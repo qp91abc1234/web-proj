@@ -26,7 +26,7 @@ const marginLeft = computed(() => {
   <g-flex class="relative wh-full">
     <g-flex class="right-area wh-full" :style="{ 'margin-left': `${marginLeft}px` }" dir="column">
       <Header />
-      <el-scrollbar height="100%">
+      <el-scrollbar class="content-scrollbar" height="100%">
         <RouterView />
       </el-scrollbar>
     </g-flex>
@@ -43,6 +43,13 @@ const marginLeft = computed(() => {
 <style lang="scss" scoped>
 .right-area {
   transition: margin-left 0.3s ease-in-out;
+}
+
+.content-scrollbar {
+  // stylelint-disable-next-line
+  :deep(.el-scrollbar__view) {
+    height: 100%;
+  }
 }
 
 .sider-shader {

@@ -45,7 +45,6 @@ const goBack = () => {
   justify-content: center;
   width: 100%;
   height: 100%;
-  min-height: 500px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
