@@ -1,12 +1,14 @@
-export type IBtnPermision = { [key: string]: { name: string; hidden: boolean } }
+export type IBtnPermissionList = { code: string; name: string; hidden: boolean }[]
+export type IBtnPermisionMap = { [key: string]: { name: string; hidden: boolean } }
 
-export interface IMenu {
+export interface IRouteData {
   path: string
   title: string
   icon?: string
   compPath?: string
-  hidden?: boolean
-  children?: IMenu[]
+  disabled?: boolean // 路由是否禁用
+  visible?: boolean // 是否显示在菜单树
+  children?: IRouteData[]
 }
 
-export type IMenuArr = IMenu[]
+export type IRouteDataArr = IRouteData[]

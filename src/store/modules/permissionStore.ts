@@ -2,18 +2,17 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 
 import type { RouteRecordRaw } from 'vue-router'
-import type { IMenuArr, IBtnPermision } from '@/common/types/permission'
+import type { IRouteDataArr, IBtnPermisionMap, IBtnPermissionList } from '@/common/types/permission'
 
 const modules = import.meta.glob('@/views/*/*.vue')
 
 export const usePermissionStore = defineStore('permission', () => {
   const isAuth = ref(false)
-  const btnMap = ref<IBtnPermision>({})
-  const menuTree = ref<RouteRecordRaw[]>([])
-  const menuMap = ref<Record<string, { title: string; jumpPath: string | undefined }>>({})
-  const routeList = ref<RouteRecordRaw[]>([])
+  const btnMap = ref<IBtnPermisionMap>({})
+  const routeTree = ref<RouteRecordRaw[]>([])
+  const routeMap = ref<Record<string, { title: string; jumpPath: string | undefined }>>({})
 
-  const menuArr: IMenuArr = [
+  const routeDataArr: IRouteDataArr = [
     {
       path: 'home',
       title: '首页',
@@ -36,13 +35,12 @@ export const usePermissionStore = defineStore('permission', () => {
 
   async function getPermission() {
     buildBtnPermission([])
-    buildMenuPermission(menuArr, menuTree.value)
-    routeList.value = flattenMenuTree(menuTree.value)
+    buildRouteTree(routeDataArr, routeTree.value)
   }
 
-  function buildBtnPermission(buttonList) {
+  function buildBtnPermission(buttonList: IBtnPermissionList) {
     btnMap.value = {}
-    buttonList.forEach((item: any) => {
+    buttonList.forEach((item) => {
       btnMap.value[item.code] = {
         name: item.name,
         hidden: item.hidden
@@ -50,74 +48,73 @@ export const usePermissionStore = defineStore('permission', () => {
     })
   }
 
-  function buildMenuPermission(menuArr: IMenuArr, container: any = [], path = '/') {
-    let allHidden = true
-    for (let i = 0; i < menuArr.length; i++) {
-      const item = menuArr[i]
-      const routePath = path.endsWith('/') ? `${path}${item.path}` : `${path}/${item.path}`
-      const redirectPath =
-        !item.compPath && item.children && item.children.length > 0
-          ? `${routePath}/${item.children[0].path}`
-          : undefined
+  function buildRouteTree(routeDataArr: IRouteDataArr, container: any = [], path = '/') {
+    let allDisabled = true
+    let firstVisiblePath = ''
 
-      menuMap.value[item.path] = {
-        title: item.title,
-        jumpPath: item.compPath ? routePath : redirectPath
+    for (let i = 0; i < routeDataArr.length; i++) {
+      const item = routeDataArr[i]
+      const isDisabled = item.disabled ?? false
+      const isVisible = item.visible ?? true
+
+      if (isDisabled) {
+        continue
       }
+      allDisabled = false
 
+      const routePath = path.endsWith('/') ? `${path}${item.path}` : `${path}/${item.path}`
       const routeObj: any = {
         path: routePath,
         name: routePath,
-        redirect: redirectPath,
         component: item.compPath ? modules[item.compPath] : undefined,
         meta: {
           title: item.title,
           icon: item.icon,
-          visible: !item.hidden
+          visible: isVisible
         }
       }
 
-      if (!item.hidden) {
-        allHidden = false
+      if (!firstVisiblePath && isVisible) {
+        firstVisiblePath = routePath
       }
 
-      let noChildren = false
-      if (item.children && item.children.length > 0) {
-        noChildren = buildMenuPermission(item.children, (routeObj.children = []), routePath)
+      if (!item.compPath && item.children && item.children.length > 0) {
+        const { allDisabled: childAllDisabled, firstVisiblePath: childFirstVisiblePath } =
+          buildRouteTree(item.children, (routeObj.children = []), routePath)
+
+        if (childAllDisabled) {
+          continue
+        }
+
+        if (childFirstVisiblePath) {
+          routeObj.redirect = childFirstVisiblePath
+        } else {
+          routeObj.meta!.visible = false
+        }
       }
 
-      if (!noChildren) {
-        container.push(routeObj)
+      routeMap.value[item.path] = {
+        title: item.title,
+        jumpPath: routeObj.redirect || routeObj.path
       }
+
+      container.push(routeObj)
     }
 
-    return allHidden
-  }
-
-  function flattenMenuTree(routes: Array<RouteRecordRaw>) {
-    const ret: Array<RouteRecordRaw> = []
-    routes.forEach((val) => {
-      if (val.children) {
-        ret.push(...flattenMenuTree(val.children))
-      } else {
-        ret.push(val)
-      }
-    })
-    return ret
+    return { allDisabled, firstVisiblePath }
   }
 
   function reset() {
     isAuth.value = false
     btnMap.value = {} as any
-    menuTree.value = []
+    routeTree.value = []
   }
 
   return {
     isAuth,
     btnMap,
-    menuTree,
-    menuMap,
-    routeList,
+    routeTree,
+    routeMap,
     getPermission,
     reset
   }

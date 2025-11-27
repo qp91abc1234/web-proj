@@ -16,7 +16,7 @@ export interface ITab {
  * 获取默认标签页（首页）
  */
 function getDefaultTab(permissionStore: ReturnType<typeof usePermissionStore>): ITab {
-  const firstRoute = permissionStore.routeList[0]
+  const firstRoute = permissionStore.routeTree[0]
   return {
     title: (firstRoute?.meta?.title as string) || '首页',
     path: firstRoute?.path || '/'

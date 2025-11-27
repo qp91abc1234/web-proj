@@ -4,23 +4,21 @@ import type { Router } from 'vue-router'
 
 const layoutRouteName = Symbol('/')
 
-const errorRoute = {
-  path: '/:pathMatch(.*)*',
-  component: () => import('@/views/error/error.vue'),
-  meta: {
-    visible: false,
-    title: '404'
-  }
-}
-
 export async function buildAsyncRoutes(router: Router) {
   const permissionStore = usePermissionStore()
 
-  permissionStore.routeList.forEach((item) => {
+  permissionStore.routeTree.forEach((item) => {
     router.addRoute(layoutRouteName, item)
   })
 
-  router.addRoute(errorRoute)
+  router.addRoute({
+    path: '/:pathMatch(.*)*',
+    component: () => import('@/views/error/error.vue'),
+    meta: {
+      visible: false,
+      title: '404'
+    }
+  })
 }
 
 export const allRoutes = [

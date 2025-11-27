@@ -29,7 +29,7 @@ export const SIDE_COLLAPSED_WIDTH = 64
         :collapse="appStore.siderCollapsed"
         router
       >
-        <template v-for="item in permissionStore.menuTree" :key="item.path">
+        <template v-for="item in permissionStore.routeTree" :key="item.path">
           <SubMenu :data="item"></SubMenu>
         </template>
       </el-menu>

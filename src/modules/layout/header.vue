@@ -32,7 +32,7 @@ const breadcrumbList = computed(() => {
     .split('/')
     .slice(1)
     .map((path) => {
-      return permissionStore.menuMap[path]
+      return permissionStore.routeMap[path]
     })
 })
 
@@ -120,7 +120,7 @@ function handleRightClick(tab: ITab, { clientX, clientY }: MouseEvent) {
             :color="tab.path === route.path ? '' : 'transparent'"
             closable
             disable-transitions
-            @click="appStore.changeTab(tab)"
+            @click="appStore.openTab(tab)"
             @close="appStore.closeTab(tab)"
             @click.right.prevent="handleRightClick(tab, $event)"
           >
