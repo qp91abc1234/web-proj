@@ -1,5 +1,5 @@
 import mitt, { type Emitter } from 'mitt'
-import { getCurrentInstance, onUnmounted } from 'vue'
+import { getCurrentScope, onScopeDispose } from 'vue'
 
 import type { Events } from './types'
 
@@ -51,10 +51,10 @@ export function useEventBus(autoCleanup = true) {
 
   // 自动清理：在 Vue 组件中使用时
   if (autoCleanup) {
-    const instance = getCurrentInstance()
-    if (instance) {
-      // 在组件环境中，注册清理函数
-      onUnmounted(clearAllHandlers)
+    const scope = getCurrentScope()
+    if (scope) {
+      // 在任意 Vue 作用域中注册清理函数（组件 / effectScope 等）
+      onScopeDispose(clearAllHandlers)
     } else if (import.meta.env.DEV) {
       // 开发环境提示：不在组件中使用，无法自动清理
       console.warn(
