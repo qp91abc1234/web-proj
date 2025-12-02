@@ -2,7 +2,7 @@ import { computed } from 'vue'
 import { defineStore } from 'pinia'
 
 import { createStorageRef } from '@/common/utils/storage'
-import { req } from '@/common/utils/request'
+import { requestPost } from '@/common/utils/request'
 
 /** 登录请求参数 */
 interface LoginParams {
@@ -63,7 +63,7 @@ export const useUserStore = defineStore('user', () => {
   async function login(params: LoginParams): Promise<void> {
     const { username, password } = params
 
-    const res = await req.post<AuthResponse>('/auth/login', {
+    const res = await requestPost<AuthResponse>('/auth/login', {
       username,
       password
     })
@@ -83,7 +83,7 @@ export const useUserStore = defineStore('user', () => {
       throw new Error('No refresh token available')
     }
 
-    const res = await req.post<AuthResponse>('/auth/refresh', {
+    const res = await requestPost<AuthResponse>('/auth/refresh', {
       refreshToken: refreshToken.value
     })
 
