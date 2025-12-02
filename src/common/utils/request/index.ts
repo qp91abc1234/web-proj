@@ -1,8 +1,17 @@
 import type { AxiosRequestConfig } from 'axios'
 
-import { instance, type ApiResponse } from './request'
+import { instance } from './request'
 
-export type { ApiResponse } from './request'
+/**
+ * 后端统一响应结构
+ * 根据你的真实结构可以进一步细化（例如 message、code 等）
+ */
+interface ApiResponse<T = any> {
+  status: number
+  data: T
+  message?: string
+  [key: string]: any
+}
 
 /**
  * 类型化请求方法

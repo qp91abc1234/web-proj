@@ -3,17 +3,6 @@ import axios, { type AxiosInstance, type AxiosError } from 'axios'
 import { useUserStore } from '@/store/modules/userStore'
 
 /**
- * 后端统一响应结构
- * 根据你的真实结构可以进一步细化（例如 message、code 等）
- */
-export interface ApiResponse<T = any> {
-  status: number
-  data: T
-  message?: string
-  [key: string]: any
-}
-
-/**
  * 刷新 token 队列中的任务
  * 当刷新成功时重新发起原请求；失败时直接 reject 原响应/错误
  */
@@ -47,6 +36,8 @@ instance.interceptors.request.use(
     return config
   },
   (error: AxiosError) => {
+    // 请求还没发出去就失败（例如配置错误）
+    // 不在这里做 UI 提示与日志上报，交由业务层或全局兜底处理
     return Promise.reject(error)
   }
 )
@@ -90,18 +81,21 @@ instance.interceptors.response.use(
       })
     }
 
-    // 2. 非 200 状态统一视为业务错误
+    // 2. 非 200 状态统一视为 API 业务错误
+    // 给 response 打上标记，方便全局错误处理快速识别
     if (data.status !== 200) {
-      return Promise.reject(response)
+      return Promise.reject({
+        isApiBusinessError: true,
+        response
+      })
     }
 
     // 3. 成功：直接返回 data（保持你原有行为）
     return data
   },
   (error: AxiosError) => {
-    // 这里可以按需扩展：比如统一处理网络错误/超时
-    // if (error.code === 'ECONNABORTED') { ... }
-
+    // 网络错误、超时、非 2xx HTTP 状态等
+    // 统一向上抛出，由业务层或全局异常处理决定后续行为
     return Promise.reject(error)
   }
 )
