@@ -3,6 +3,22 @@ import { createStorageObject } from './createStorageObject'
 import type { StorageRefOptions } from './types'
 
 /**
+ * storageRef 使用的 key 前缀
+ * 统一通过常量管理，避免与业务存储冲突，也方便后续调整。
+ */
+const STORAGE_REF_PREFIX = 'storageRef_' as const
+
+/**
+ * 为 storageRef 复用的底层 Storage 实例
+ * 所有通过 createStorageRef 创建的 key 都使用同一组
+ * localStorage / sessionStorage 实例，避免重复创建对象。
+ */
+const storageRefStores = {
+  local: createStorageObject<Record<string, unknown>>('local', STORAGE_REF_PREFIX),
+  session: createStorageObject<Record<string, unknown>>('session', STORAGE_REF_PREFIX)
+} as const
+
+/**
  * Storage 事件管理器（单例）
  * 用于统一管理所有 storageRef 的跨标签页同步事件监听
  */
@@ -24,6 +40,8 @@ class StorageEventManager {
    * 全局 storage 事件处理器
    */
   private handleStorageEvent = (event: StorageEvent) => {
+    // 只处理 localStorage 的事件（目前仅 localStorage 支持跨标签页同步）
+    if (event.storageArea !== window.localStorage) return
     if (!event.key) return
 
     const callbacks = this.listeners.get(event.key)
@@ -111,9 +129,11 @@ export function createStorageRef<T>(
   options: StorageRefOptions<T> = {}
 ) {
   const { type = 'local', onChange, immediate = false, sync = true } = options
-
-  const storage = createStorageObject<Record<string, T>>(type, 'storageRef_')
-  const fullKey = `storageRef_${name}`
+  // 复用全局的 storageRef 存储实例，避免每次调用都新建对象
+  const baseStorage = type === 'session' ? storageRefStores.session : storageRefStores.local
+  const storage = baseStorage as ReturnType<typeof createStorageObject<Record<string, T>>>
+  // 实际写入 localStorage 的完整 key，需与 STORAGE_REF_PREFIX 保持一致
+  const fullKey = `${STORAGE_REF_PREFIX}${name}`
 
   // 初始化：从存储中读取，如果不存在则使用默认值
   const storedValue = storage.get(name)
@@ -121,20 +141,12 @@ export function createStorageRef<T>(
 
   const refValue = ref<T>(initialValue)
 
-  // 标记：是否是由当前标签页触发的更新（用于避免重复触发）
-  let isLocalUpdate = false
-
   // 监听变化并同步到存储
   watch(
     refValue,
     (newValue) => {
-      isLocalUpdate = true
       storage.set(name, newValue)
       onChange?.(newValue)
-      // 使用 setTimeout 确保同步代码执行完后再重置标记
-      setTimeout(() => {
-        isLocalUpdate = false
-      }, 0)
     },
     {
       immediate,
@@ -148,11 +160,6 @@ export function createStorageRef<T>(
     const eventManager = StorageEventManager.getInstance()
 
     const handleStorageChange = (event: StorageEvent) => {
-      // 如果是当前标签页触发的更新，忽略（避免循环）
-      if (isLocalUpdate) {
-        return
-      }
-
       // 处理删除操作
       if (event.newValue === null) {
         refValue.value = defaultValue
