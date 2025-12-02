@@ -1,4 +1,24 @@
 <script setup lang="ts">
+/**
+ * TruncateText - 文本截断组件
+ *
+ * 使用示例：
+ *
+ * 1. 基础用法（多行截断 + Tooltip）
+ * <truncate-text :lines="2" >
+ *   这是一段比较长的文案，当超过 2 行时会自动截断，并在 hover 时展示完整内容。
+ * </truncate-text>
+ *
+ * 2. 自定义 Tooltip 内容
+ * <truncate-text :lines="1" >
+ *   <template #default>
+ *     只显示一行的标题，超出部分省略号展示
+ *   </template>
+ *   <template #tooltip-content>
+ *     这里是自定义的 tooltip 内容，可以放更详细的说明
+ *   </template>
+ * </truncate-text>
+ */
 import { ref, computed, useSlots } from 'vue'
 
 import { vTextTruncated } from './vTextTruncated'
