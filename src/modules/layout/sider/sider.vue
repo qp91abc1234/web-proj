@@ -9,6 +9,11 @@ import SubMenu from '@/modules/layout/sider/subMenu.vue'
 const route = useRoute()
 const permissionStore = usePermissionStore()
 const appStore = useAppStore()
+
+// 从环境变量获取项目名称
+const appName = import.meta.env.VITE_APP_NAME
+// 取首字母作为图标
+const appIcon = appName.charAt(0).toUpperCase()
 </script>
 <script lang="ts">
 export const SIDE_WIDTH = 200
@@ -18,8 +23,8 @@ export const SIDE_COLLAPSED_WIDTH = 64
 <template>
   <g-flex class="sider" dir="column">
     <g-flex class="top" :class="{ 'is-show': !appStore.siderCollapsed }" align="center">
-      <g-flex class="icon" justify="center" align="center">Z</g-flex>
-      <el-text class="title" type="primary">Zcc's 作品集</el-text>
+      <g-flex class="icon" justify="center" align="center">{{ appIcon }}</g-flex>
+      <el-text class="title" type="primary">{{ appName }}</el-text>
     </g-flex>
     <el-scrollbar height="100%">
       <el-menu
