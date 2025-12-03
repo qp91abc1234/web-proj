@@ -1,5 +1,5 @@
-import type { LogTransport, LogRecord } from '../types'
-import { LogLevel } from '../types'
+import type { LogTransport, LogRecord } from '../types.d'
+import { LogLevel } from '../types.d'
 import { formatDateTime } from '@/common/utils'
 
 /**

@@ -1,6 +1,6 @@
 import { Logger } from './Logger'
 
-export { LogLevel } from './types'
+export { LogLevel } from './types.d'
 
 /**
  * 全局日志实例

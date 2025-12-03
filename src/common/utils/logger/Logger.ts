@@ -1,5 +1,5 @@
-import type { LogTransport, LogExtra, LogRecord } from './types'
-import { LogLevel } from './types'
+import type { LogTransport, LogExtra, LogRecord } from './types.d'
+import { LogLevel } from './types.d'
 import { ConsoleTransport } from './transports/ConsoleTransport'
 
 /**
