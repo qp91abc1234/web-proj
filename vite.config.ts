@@ -1,81 +1,9 @@
 import { join } from 'path'
-import UnoCSS from 'unocss/vite'
-import vue from '@vitejs/plugin-vue'
 import { loadEnv, defineConfig } from 'vite'
-import AutoImport from 'unplugin-auto-import/vite'
-import vueDevTools from 'vite-plugin-vue-devtools'
-import Components from 'unplugin-vue-components/vite'
-import { visualizer } from 'rollup-plugin-visualizer'
-import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
-import ViteHtmlTransform from './vite-plugins/viteHtmlTransform'
+
+import { getPlugins } from './vite-plugins'
 
 import type { ConfigEnv, UserConfig } from 'vite'
-
-function getPlugins(viteEnv: Env.ImportMeta, isBuild: boolean) {
-  // 使用北京时间（Asia/Shanghai），格式类似：2025/12/03 20:15:30
-  const buildTime = new Date().toLocaleString('zh-CN', {
-    timeZone: 'Asia/Shanghai',
-    hour12: false
-  })
-
-  let plugins = [
-    vue(),
-    AutoImport({
-      resolvers: [ElementPlusResolver()]
-    }),
-    Components({
-      resolvers: [ElementPlusResolver()]
-    }),
-    UnoCSS(),
-    // HTML 转换插件：注入构建时间 & HTML 压缩
-    ViteHtmlTransform({
-      // 仅在构建时开启 HTML 压缩，开发环境保留原始 HTML，方便调试
-      minify: isBuild,
-      inject: [
-        {
-          // 默认入口 HTML：index.html
-          regex: 'index\\.html$',
-          data: {
-            // 也可以在 EJS 模板中使用 <%= buildTime %>
-            buildTime
-          },
-          tags: [
-            {
-              tag: 'meta',
-              attrs: {
-                name: 'build-time',
-                content: buildTime
-              },
-              injectTo: 'head'
-            }
-          ]
-        }
-      ]
-    })
-  ]
-
-  const isTrue = (value: string) => value === 'true'
-
-  if (!isBuild && isTrue(viteEnv.VITE_DEV_TOOL)) {
-    plugins = plugins.concat(
-      vueDevTools({
-        launchEditor: 'cursor'
-      })
-    )
-  }
-
-  if (isBuild && isTrue(viteEnv.VITE_VISUALIZER_TOOL)) {
-    plugins = plugins.concat(
-      visualizer({
-        emitFile: true,
-        filename: 'stat.html',
-        open: true
-      })
-    )
-  }
-
-  return plugins
-}
 
 // https://vite.dev/config/
 export default defineConfig((env: ConfigEnv) => {
