@@ -1,7 +1,7 @@
 import type { App, ComponentPublicInstance } from 'vue'
 import { ElMessage } from 'element-plus'
 
-import { logError } from './errorLogger'
+import { logger } from './logger'
 
 /**
  * 全局错误处理安装函数
@@ -14,12 +14,16 @@ export function setupErrorHandling(app: App<Element>) {
   app.config.errorHandler = (err, instance, info) => {
     const vm = instance as ComponentPublicInstance | null
 
-    logError(err, {
-      type: 'vue',
-      info,
-      componentName: vm?.$options?.name,
-      propsData: vm?.$props
-    })
+    logger.error(
+      err instanceof Error ? err.message : 'Vue 组件错误',
+      {
+        tag: 'error:vue',
+        info,
+        componentName: vm?.$options?.name,
+        propsData: vm?.$props
+      },
+      err
+    )
   }
 
   /**
@@ -39,22 +43,29 @@ export function setupErrorHandling(app: App<Element>) {
           target.tagName === 'AUDIO')
 
       if (isResourceError) {
-        logError(event, {
-          type: 'resource',
-          tagName: target.tagName,
-          src: (target as HTMLImageElement).src || (target as HTMLLinkElement).href
-        })
+        logger.error(
+          `资源加载失败: ${target.tagName}`,
+          {
+            tag: 'error:resource',
+            tagName: target.tagName,
+            src: (target as HTMLImageElement).src || (target as HTMLLinkElement).href
+          },
+          event
+        )
         return
       }
 
       // JS 运行时错误
-      logError(event.error || event, {
-        type: 'js',
-        message: event.message,
-        filename: event.filename,
-        lineno: event.lineno,
-        colno: event.colno
-      })
+      logger.error(
+        event.message || 'JS 运行时错误',
+        {
+          tag: 'error:js',
+          filename: event.filename,
+          lineno: event.lineno,
+          colno: event.colno
+        },
+        event.error || event
+      )
     },
     true
   )
@@ -81,14 +92,18 @@ export function setupErrorHandling(app: App<Element>) {
       })
 
       // 记录日志
-      logError(bizError, {
-        type: 'business',
-        status: data.status,
-        url: config?.url,
-        method: config?.method,
-        response: data,
-        unhandled: true
-      })
+      logger.error(
+        data.message || '业务错误',
+        {
+          tag: 'error:business',
+          status: data.status,
+          url: config?.url,
+          method: config?.method,
+          response: data,
+          unhandled: true
+        },
+        bizError
+      )
 
       // 用户提示：优先使用后端返回的 message
       if (data.message) {
@@ -105,14 +120,18 @@ export function setupErrorHandling(app: App<Element>) {
       const axiosError = reason as any
 
       // 记录日志
-      logError(axiosError, {
-        type: 'http',
-        url: axiosError.config?.url,
-        method: axiosError.config?.method,
-        status: axiosError.response?.status,
-        code: axiosError.code,
-        unhandled: true
-      })
+      logger.error(
+        axiosError.message || '网络请求失败',
+        {
+          tag: 'error:http',
+          url: axiosError.config?.url,
+          method: axiosError.config?.method,
+          status: axiosError.response?.status,
+          code: axiosError.code,
+          unhandled: true
+        },
+        axiosError
+      )
 
       // 用户提示：根据错误类型给出友好文案
       let message = '网络异常，请稍后重试'
@@ -133,9 +152,13 @@ export function setupErrorHandling(app: App<Element>) {
     }
 
     // 3.3 其他 Promise 异常（普通 Error 或其他类型）
-    logError(reason, {
-      type: 'promise',
-      unhandled: true
-    })
+    logger.error(
+      reason instanceof Error ? reason.message : '未处理的 Promise 异常',
+      {
+        tag: 'error:promise',
+        unhandled: true
+      },
+      reason
+    )
   })
 }
