@@ -336,6 +336,12 @@ const shortcuts = ref([
       grid-template-columns: 1fr;
     }
 
+    .shortcuts-card {
+      .shortcuts-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
     .info-grid {
       grid-template-columns: 1fr;
     }
