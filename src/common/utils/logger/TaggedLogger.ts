@@ -12,18 +12,18 @@ export class TaggedLogger {
   ) {}
 
   debug(message: string, extra?: LogExtra): void {
-    this.logger.debug(message, { ...extra, tag: this.tag })
+    this.logger.debug(message, { ...(extra || {}), tag: this.tag })
   }
 
   info(message: string, extra?: LogExtra): void {
-    this.logger.info(message, { ...extra, tag: this.tag })
+    this.logger.info(message, { ...(extra || {}), tag: this.tag })
   }
 
   warn(message: string, extra?: LogExtra): void {
-    this.logger.warn(message, { ...extra, tag: this.tag })
+    this.logger.warn(message, { ...(extra || {}), tag: this.tag })
   }
 
   error(message: string, extra?: LogExtra, error?: unknown): void {
-    this.logger.error(message, { ...extra, tag: this.tag }, error)
+    this.logger.error(message, { ...(extra || {}), tag: this.tag }, error)
   }
 }

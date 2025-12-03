@@ -1,5 +1,6 @@
 import type { LogTransport, LogRecord } from '../types'
 import { LogLevel } from '../types'
+import { formatDateTime } from '@/common/utils'
 
 /**
  * 控制台日志传输器
@@ -28,10 +29,11 @@ export class ConsoleTransport implements LogTransport {
 
     const levelInfo = this.getLevelInfo(level)
     const tag = extra?.tag ? `[${extra.tag}]` : ''
+    const time = formatDateTime(timestamp, { template: 'HH:mm:ss.SSS' })
 
     if (console.groupCollapsed) {
       console.groupCollapsed(
-        `%c${levelInfo.label}%c ${tag} ${message} %c@ ${timestamp}`,
+        `%c${levelInfo.label}%c ${tag} ${message} %c@ ${time}`,
         `color:#fff;background:${levelInfo.color};padding:2px 6px;border-radius:2px;font-weight:bold;`,
         'color:#333;',
         'color:#999;font-size:0.9em;'

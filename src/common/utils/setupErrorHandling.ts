@@ -4,10 +4,22 @@ import { ElMessage } from 'element-plus'
 import { logger } from './logger'
 
 /**
+ * 标记是否已经安装过错误处理
+ */
+let installed = false
+
+/**
  * 全局错误处理安装函数
  * 在应用创建阶段调用一次即可
  */
 export function setupErrorHandling(app: App<Element>) {
+  // 防止重复安装
+  if (installed) {
+    logger.warn('错误处理已经安装，跳过重复安装')
+    return
+  }
+  installed = true
+
   /**
    * 1. Vue 应用内部错误（组件渲染、生命周期、watch 等）
    */
@@ -106,11 +118,7 @@ export function setupErrorHandling(app: App<Element>) {
       )
 
       // 用户提示：优先使用后端返回的 message
-      if (data.message) {
-        ElMessage.error(data.message)
-      } else {
-        ElMessage.error('操作失败，请稍后重试')
-      }
+      ElMessage.error(data.message || '操作失败，请稍后重试')
 
       return
     }
