@@ -33,18 +33,24 @@ export class ConsoleTransport implements LogTransport {
 
     if (console.groupCollapsed) {
       console.groupCollapsed(
-        `%c${levelInfo.label}%c ${tag} ${message} %c@ ${time}`,
+        // 标题行：等级 + 标签 + 时间
+        `%c${levelInfo.label}%c ${tag} @ ${time}`,
+        // 主标签：深色和浅色模式下都对比度足够
         `color:#fff;background:${levelInfo.color};padding:2px 6px;border-radius:2px;font-weight:bold;`,
-        'color:#333;',
-        'color:#999;font-size:0.9em;'
+        // 时间：浅灰色
+        'color:#9ca3af;font-size:0.9em;'
       )
+
+      if (message) {
+        console.log('📝 Message:', message)
+      }
 
       if (extra && Object.keys(extra).length > 0) {
         console.log('📋 Extra:', extra)
       }
 
       if (error !== undefined) {
-        console.error('❌ Error:', error)
+        console.error('Error:', error)
       }
 
       console.groupEnd()
@@ -95,7 +101,7 @@ export class ConsoleTransport implements LogTransport {
       case LogLevel.WARN:
         return { label: '⚠️ WARN', color: '#E6A23C' }
       case LogLevel.ERROR:
-        return { label: '❌ ERROR', color: '#F56C6C' }
+        return { label: '❌ ERROR', color: '#b91c1c' }
       default:
         return { label: 'LOG', color: '#909399' }
     }
