@@ -7,10 +7,17 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 import Components from 'unplugin-vue-components/vite'
 import { visualizer } from 'rollup-plugin-visualizer'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
+import ViteHtmlTransform from './vite-plugins/viteHtmlTransform'
 
 import type { ConfigEnv, UserConfig } from 'vite'
 
 function getPlugins(viteEnv: Env.ImportMeta, isBuild: boolean) {
+  // 使用北京时间（Asia/Shanghai），格式类似：2025/12/03 20:15:30
+  const buildTime = new Date().toLocaleString('zh-CN', {
+    timeZone: 'Asia/Shanghai',
+    hour12: false
+  })
+
   let plugins = [
     vue(),
     AutoImport({
@@ -19,7 +26,32 @@ function getPlugins(viteEnv: Env.ImportMeta, isBuild: boolean) {
     Components({
       resolvers: [ElementPlusResolver()]
     }),
-    UnoCSS()
+    UnoCSS(),
+    // HTML 转换插件：注入构建时间 & HTML 压缩
+    ViteHtmlTransform({
+      // 仅在构建时开启 HTML 压缩，开发环境保留原始 HTML，方便调试
+      minify: isBuild,
+      inject: [
+        {
+          // 默认入口 HTML：index.html
+          regex: 'index\\.html$',
+          data: {
+            // 也可以在 EJS 模板中使用 <%= buildTime %>
+            buildTime
+          },
+          tags: [
+            {
+              tag: 'meta',
+              attrs: {
+                name: 'build-time',
+                content: buildTime
+              },
+              injectTo: 'head'
+            }
+          ]
+        }
+      ]
+    })
   ]
 
   const isTrue = (value: string) => value === 'true'
