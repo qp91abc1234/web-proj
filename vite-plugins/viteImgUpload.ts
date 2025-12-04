@@ -5,65 +5,17 @@ import { promises as fs } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 import type { ResolvedConfig } from 'vite'
-import type { PngOptions, JpegOptions } from 'sharp'
 import { createLogger } from './utils/logger'
-
-type AssetMatcher = RegExp | string | string[]
-
-interface IOptions {
-  log?: boolean
-  verbose?: boolean
-  cache?: boolean | 'reset'
-  test?: RegExp
-  include?: AssetMatcher
-  exclude?: AssetMatcher
-  png?: PngOptions
-  jpeg?: JpegOptions
-  jpg?: JpegOptions
-  upload: (uploadItems: UploadItem[]) => Promise<UploadResult[]>
-}
-
-interface UploadItem {
-  key?: string
-  cacheKey?: string
-  name: string
-  md5Name: string
-  source: Buffer
-}
-
-interface UploadResult {
-  url: string
-}
-
-interface LogInfo {
-  oldSize: number
-  newSize: number
-  url?: string
-}
-
-interface CacheData {
-  [key: string]: string
-}
-
-// Vite bundle 类型定义
-interface BundleAsset {
-  type: 'asset'
-  fileName: string
-  name: string
-  source: string | Buffer
-}
-
-interface BundleChunk {
-  type: 'chunk'
-  code: string
-  fileName: string
-}
-
-type BundleItem = BundleAsset | BundleChunk
-
-interface OutputBundle {
-  [key: string]: BundleItem
-}
+import type {
+  ViteImgUploadOptions,
+  AssetMatcher,
+  UploadItem,
+  LogInfo,
+  CacheData,
+  BundleAsset,
+  BundleChunk,
+  OutputBundle
+} from './types/viteImgUpload'
 
 // 图片文件扩展名常量
 const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'] as const
@@ -73,14 +25,13 @@ const IMAGE_REGEX = /\.(?:jpg|jpeg|png|gif|bmp|webp)$/i
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-export default function ViteImgUpload(opts: IOptions) {
+export default function ViteImgUpload(opts: ViteImgUploadOptions) {
   let config: ResolvedConfig
   opts.log = opts.log ?? true
-  opts.verbose = opts.verbose ?? false
   opts.cache = opts.cache ?? true
 
   // 创建日志记录器
-  const logger = createLogger(opts.verbose)
+  const logger = createLogger()
 
   const logInfo: Record<string, LogInfo> = {}
   const imgsMap: Record<string, string> = {}

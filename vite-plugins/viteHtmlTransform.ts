@@ -1,38 +1,12 @@
-import type { PluginOption, ResolvedConfig } from 'vite'
-import type { HtmlTagDescriptor } from 'vite'
-import type { Options as EJSOptions } from 'ejs'
+import type { PluginOption, ResolvedConfig, HtmlTagDescriptor } from 'vite'
 import { render } from 'ejs'
 import path from 'node:path'
+import type { Options as EJSOptions } from 'ejs'
 import type { Options as MinifyOptions } from 'html-minifier-terser'
 import { minify as minifyFn } from 'html-minifier-terser'
 import ansi from 'ansi-colors'
 import { createLogger } from './utils/logger'
-
-/**
- * HTML 注入数据配置
- */
-interface InjectData {
-  /** 用于匹配 HTML 文件名的正则表达式字符串 */
-  regex?: string
-  /** 要注入到模板的数据 */
-  data?: Record<string, any>
-  /** 要注入到 HTML 的标签 */
-  tags?: HtmlTagDescriptor[]
-  /** EJS 模板选项 */
-  ejsOptions?: EJSOptions
-}
-
-/**
- * 插件配置选项
- */
-interface Options {
-  /** HTML 压缩配置，false 表示不压缩，true 或不传表示使用默认配置 */
-  minify?: boolean | MinifyOptions
-  /** HTML 注入配置数组 */
-  inject?: InjectData[]
-  /** 是否启用详细日志 */
-  verbose?: boolean
-}
+import type { ViteHtmlTransformOptions } from './types/viteHtmlTransform'
 
 /**
  * 默认的 HTML 压缩配置
@@ -70,7 +44,7 @@ function normalizeMinifyOptions(minify?: boolean | MinifyOptions): MinifyOptions
  * Vite HTML 转换插件
  * 支持 EJS 模板渲染和 HTML 压缩
  */
-export default function ViteHtmlTransform(opts: Options = {}): PluginOption {
+export default function ViteHtmlTransform(opts: ViteHtmlTransformOptions = {}): PluginOption {
   const minifyOptions = normalizeMinifyOptions(opts.minify)
   const injectData = opts.inject ?? []
   const verbose = opts.verbose ?? false
