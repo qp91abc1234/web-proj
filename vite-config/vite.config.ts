@@ -1,6 +1,7 @@
 import { join } from 'path'
 import { loadEnv, defineConfig } from 'vite'
 
+import { manualChunks } from './manual-chunks'
 import { getPlugins } from './vite-plugins'
 
 import type { ConfigEnv, UserConfig } from 'vite'
@@ -13,13 +14,20 @@ export default defineConfig((env: ConfigEnv) => {
     plugins: getPlugins(viteEnv, env.command === 'build'),
     resolve: {
       alias: {
-        '@': join(__dirname, './src')
+        '@': join(__dirname, '../src')
       }
     },
     css: {
       preprocessorOptions: {
         scss: {
           additionalData: `@use '@/common/scss/mixin.scss';`
+        }
+      }
+    },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks
         }
       }
     },

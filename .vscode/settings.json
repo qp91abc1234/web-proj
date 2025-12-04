@@ -15,7 +15,7 @@
     "package.json": "pnpm-lock.yaml,.gitignore,components.d.ts,auto-imports.d.ts",
     ".env": ".env.*",
     "tsconfig.json": "tsconfig.*",
-    "vite.config.ts": "uno.config.ts,.editorconfig,.prettierrc,eslint.config.mjs,stylelint.config.mjs,.eslintignore,.stylelintignore"
+    ".editorconfig": "uno.config.ts,.prettierrc,eslint.config.mjs,stylelint.config.mjs,.eslintignore,.stylelintignore"
   },
   "editor.quickSuggestions": {
     "strings": "on"
