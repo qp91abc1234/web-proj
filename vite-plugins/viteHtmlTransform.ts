@@ -5,6 +5,8 @@ import { render } from 'ejs'
 import path from 'node:path'
 import type { Options as MinifyOptions } from 'html-minifier-terser'
 import { minify as minifyFn } from 'html-minifier-terser'
+import ansi from 'ansi-colors'
+import { createLogger } from './utils/logger'
 
 /**
  * HTML 注入数据配置
@@ -74,25 +76,22 @@ export default function ViteHtmlTransform(opts: Options = {}): PluginOption {
   const verbose = opts.verbose ?? false
   let config: ResolvedConfig
 
-  function log(message: string, ...args: any[]) {
-    if (verbose) {
-      console.log(`[vite-html-template] ${message}`, ...args)
-    }
-  }
+  // 创建日志记录器
+  const logger = createLogger(verbose)
 
   return [
     {
       name: 'vite-html-transform',
       configResolved(cfg) {
         config = cfg
-        log('Plugin initialized')
+        logger('verbose', 'vite-html-transform', '插件初始化完成')
       },
       transformIndexHtml: {
         order: 'pre',
         handler: async (html, ctx) => {
           try {
             const htmlName = path.basename(ctx.filename)
-            log(`Processing HTML file: ${htmlName}`)
+            logger('verbose', 'vite-html-transform', `正在处理 HTML 文件: ${ansi.yellow(htmlName)}`)
 
             // 查找所有匹配的注入配置，并按顺序依次生效（后面的可以覆盖前面的字段）
             const matchedConfigs = injectData.filter((item) => {
@@ -101,9 +100,10 @@ export default function ViteHtmlTransform(opts: Options = {}): PluginOption {
             })
 
             if (matchedConfigs.length > 0) {
-              log(
-                `Matched ${matchedConfigs.length} inject config(s):`,
-                matchedConfigs.map((item) => item.regex)
+              logger(
+                'verbose',
+                'vite-html-transform',
+                `匹配到 ${ansi.magenta(matchedConfigs.length.toString())} 个注入配置: ${matchedConfigs.map((item) => ansi.gray(item.regex || '.*')).join(', ')}`
               )
             }
 
@@ -141,14 +141,14 @@ export default function ViteHtmlTransform(opts: Options = {}): PluginOption {
 
             // 渲染 EJS 模板
             const renderedHtml = await render(html, ejsData, mergedEjsOptions)
-            log(`Template rendered successfully for ${htmlName}`)
+            logger('verbose', 'vite-html-transform', `模板渲染成功: ${ansi.yellow(htmlName)}`)
 
             return {
               html: renderedHtml,
               tags: mergedTags
             }
           } catch (error) {
-            console.error('[vite-html-template] Failed to process HTML:', error)
+            logger('error', 'vite-html-transform', `处理 HTML 失败: ${error}`)
             throw error
           }
         }
@@ -160,12 +160,13 @@ export default function ViteHtmlTransform(opts: Options = {}): PluginOption {
       apply: 'build',
       async generateBundle(_, bundle) {
         if (minifyOptions === false) {
-          log('HTML minification is disabled')
+          logger('verbose', 'vite-html-compress', 'HTML 压缩已禁用')
           return
         }
 
-        log('Starting HTML minification...')
+        logger('info', 'vite-html-compress', '\n开始压缩 HTML...')
         let processedCount = 0
+        const results: Array<{ fileName: string; originalSize: number; newSize: number }> = []
 
         try {
           const bundleKeys = Object.keys(bundle)
@@ -179,22 +180,36 @@ export default function ViteHtmlTransform(opts: Options = {}): PluginOption {
               item.fileName.endsWith('.html') &&
               typeof item.source === 'string'
             ) {
-              log(`Minifying: ${item.fileName}`)
+              logger('verbose', 'vite-html-compress', `正在压缩: ${ansi.yellow(item.fileName)}`)
               const originalSize = item.source.length
 
               item.source = await minifyFn(item.source, minifyOptions)
 
               const newSize = item.source.length
-              const saved = ((1 - newSize / originalSize) * 100).toFixed(2)
-              log(`${item.fileName}: ${originalSize} -> ${newSize} bytes (saved ${saved}%)`)
+              results.push({ fileName: item.fileName, originalSize, newSize })
 
               processedCount++
             }
           }
 
-          log(`HTML minification completed. Processed ${processedCount} file(s)`)
+          if (processedCount > 0) {
+            logger('success', 'vite-html-compress', '\n压缩结果:')
+            for (const { fileName, originalSize, newSize } of results) {
+              const saved = ((1 - newSize / originalSize) * 100).toFixed(2)
+              const savedBytes = originalSize - newSize
+              logger(
+                'success',
+                'vite-html-compress',
+                `${ansi.yellow(fileName)}: ${ansi.gray(`${originalSize}B`)} -> ${ansi.gray(`${newSize}B`)} ${ansi.green(`(节省 ${savedBytes}B, ${saved}%)`)}`,
+                true
+              )
+            }
+            logger('success', 'vite-html-compress', `压缩完成！共处理 ${processedCount} 个文件\n`)
+          } else {
+            logger('info', 'vite-html-compress', ansi.gray('没有需要压缩的 HTML 文件\n'))
+          }
         } catch (error) {
-          console.error('[vite-html-compress] Failed to minify HTML:', error)
+          logger('error', 'vite-html-compress', `压缩 HTML 失败: ${error}`)
           throw error
         }
       }

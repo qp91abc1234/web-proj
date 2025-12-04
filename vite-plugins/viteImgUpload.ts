@@ -6,53 +6,97 @@ import { fileURLToPath } from 'node:url'
 
 import type { ResolvedConfig } from 'vite'
 import type { PngOptions, JpegOptions } from 'sharp'
+import { createLogger } from './utils/logger'
+
+type AssetMatcher = RegExp | string | string[]
 
 interface IOptions {
   log?: boolean
+  verbose?: boolean
   cache?: boolean | 'reset'
   test?: RegExp
-  include?: RegExp | string | string[]
-  exclude?: RegExp | string | string[]
+  include?: AssetMatcher
+  exclude?: AssetMatcher
   png?: PngOptions
   jpeg?: JpegOptions
   jpg?: JpegOptions
-  upload: (uploadItems: { md5Name: string; source: any }[]) => Promise<{ url: string }[]>
+  upload: (uploadItems: UploadItem[]) => Promise<UploadResult[]>
 }
 
-let __filename
-let __dirname
-
-if (typeof __filename === 'undefined') {
-  // ESM 环境
-  __filename = fileURLToPath(import.meta.url)
-  __dirname = path.dirname(__filename)
-} else {
-  // CJS 环境
-  // eslint-disable-next-line
-  __dirname = __dirname
+interface UploadItem {
+  key?: string
+  cacheKey?: string
+  name: string
+  md5Name: string
+  source: Buffer
 }
+
+interface UploadResult {
+  url: string
+}
+
+interface LogInfo {
+  oldSize: number
+  newSize: number
+  url?: string
+}
+
+interface CacheData {
+  [key: string]: string
+}
+
+// Vite bundle 类型定义
+interface BundleAsset {
+  type: 'asset'
+  fileName: string
+  name: string
+  source: string | Buffer
+}
+
+interface BundleChunk {
+  type: 'chunk'
+  code: string
+  fileName: string
+}
+
+type BundleItem = BundleAsset | BundleChunk
+
+interface OutputBundle {
+  [key: string]: BundleItem
+}
+
+// 图片文件扩展名常量
+const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'] as const
+const IMAGE_REGEX = /\.(?:jpg|jpeg|png|gif|bmp|webp)$/i
+
+// ESM 环境获取 __dirname
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 export default function ViteImgUpload(opts: IOptions) {
   let config: ResolvedConfig
   opts.log = opts.log ?? true
+  opts.verbose = opts.verbose ?? false
   opts.cache = opts.cache ?? true
 
-  const logInfo = {}
-  const imgsMap = {}
+  // 创建日志记录器
+  const logger = createLogger(opts.verbose)
 
-  function isImg(val) {
-    const imageRegex = /\.(?:jpg|jpeg|png|gif|bmp|webp)$/i
-    return imageRegex.test(val)
+  const logInfo: Record<string, LogInfo> = {}
+  const imgsMap: Record<string, string> = {}
+
+  function isImg(val: string): boolean {
+    return IMAGE_REGEX.test(val)
   }
 
-  function isAssetMatch(name: string, matcher): boolean {
-    if (Object.prototype.toString.call(matcher) === '[object String]') return name === matcher
-    if (Object.prototype.toString.call(matcher) === '[object RegExp]') return matcher.test(name)
+  function isAssetMatch(name: string, matcher: AssetMatcher): boolean {
+    if (typeof matcher === 'string') return name === matcher
+    if (matcher instanceof RegExp) return matcher.test(name)
     if (Array.isArray(matcher)) return matcher.includes(name)
     return false
   }
 
-  function checkAsset(val) {
+  function checkAsset(val: string): boolean {
     if (!isImg(val)) return false
 
     if (opts.include && isAssetMatch(val, opts.include)) {
@@ -73,22 +117,21 @@ export default function ViteImgUpload(opts: IOptions) {
   async function getCache() {
     const filePath = path.join(__dirname, 'cache.json')
 
-    let cache = {}
+    let cache: CacheData = {}
     try {
       if (opts.cache === true) {
-        // 检查文件是否存在
+        // 检查文件是否存在并读取
         await fs.access(filePath, fs.constants.F_OK)
-
-        // 文件存在，读取并修改内容
         const data = await fs.readFile(filePath, 'utf8')
-        cache = JSON.parse(data)
+        cache = JSON.parse(data) as CacheData
       }
-    } catch (err: any) {
-      if (err.code === 'ENOENT') {
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'code' in err && err.code === 'ENOENT') {
+        // 文件不存在，创建空的缓存文件
         const dataToWrite = JSON.stringify(cache, null, 2)
         await fs.writeFile(filePath, dataToWrite, 'utf8')
       } else {
-        console.error('Error:', err)
+        console.error('读取缓存文件错误:', err)
       }
     }
 
@@ -96,120 +139,163 @@ export default function ViteImgUpload(opts: IOptions) {
       cache,
       async updateCache() {
         if (opts.cache === false) return
-        const updatedJsonData = JSON.stringify(cache, null, 2)
-        await fs.writeFile(filePath, updatedJsonData, 'utf8')
+        try {
+          const updatedJsonData = JSON.stringify(cache, null, 2)
+          await fs.writeFile(filePath, updatedJsonData, 'utf8')
+        } catch (err: unknown) {
+          console.error('更新缓存文件错误:', err)
+        }
       }
     }
   }
 
-  async function compressImg(uploadItems) {
+  async function compressImg(uploadItems: UploadItem[]): Promise<void> {
     const promises = uploadItems.map(async (item) => {
       const { name, source } = item
-      const nameArr = name.split('.')
-      const ext = nameArr[nameArr.length - 1]
-      const p = await sharp(source)
-        .toFormat(ext, opts[ext] || { quality: 80 })
+      const ext = path.extname(name).slice(1).toLowerCase()
+
+      // 获取对应格式的压缩选项
+      const formatOptions = opts[ext as 'png' | 'jpeg' | 'jpg'] || { quality: 80 }
+
+      const buffer = await sharp(source)
+        .toFormat(ext as any, formatOptions)
         .toBuffer()
-        .then((buffer) => {
-          const oldSize: number = item.source.byteLength
-          const newSize: number = buffer.byteLength
 
-          logInfo[name] = logInfo[name] || {}
-          logInfo[name].oldSize = oldSize
-          logInfo[name].newSize = newSize
+      const oldSize = source.byteLength
+      const newSize = buffer.byteLength
 
-          if (newSize < oldSize) {
-            item.source = buffer
-          }
-        })
-      return p
+      // 记录日志信息
+      logInfo[name] = {
+        oldSize,
+        newSize
+      }
+
+      // 只有压缩后更小才替换
+      if (newSize < oldSize) {
+        item.source = buffer
+      }
     })
 
     await Promise.all(promises)
   }
 
-  async function uploadImg(bundle) {
-    const keys = Object.keys(bundle)
+  async function uploadImg(bundle: OutputBundle): Promise<void> {
     const { cache, updateCache } = await getCache()
 
-    const uploadItems: any[] = []
-    for (let i = 0; i < keys.length; i++) {
-      const key = keys[i]
-      const item = bundle[key]
+    const uploadItems: UploadItem[] = []
 
+    // 遍历 bundle 查找需要上传的图片资源
+    for (const [key, item] of Object.entries(bundle)) {
       if (item.type === 'asset' && checkAsset(item.name)) {
-        const cacheKey = `${key}-${item.source.byteLength}`
+        const assetItem = item as BundleAsset
+        const cacheKey = `${key}-${assetItem.source.toString().length}`
+
         if (cache[cacheKey]) {
+          // 使用缓存的 URL
           imgsMap[key] = cache[cacheKey]
           delete bundle[key]
         } else {
-          const nameArr = item.fileName.split('/')
+          // 需要上传的资源
+          const md5Name = path.basename(assetItem.fileName)
           uploadItems.push({
             key,
             cacheKey,
-            name: item.name,
-            md5Name: nameArr[nameArr.length - 1],
-            source: item.source
+            name: assetItem.name,
+            md5Name,
+            source: assetItem.source as Buffer
           })
         }
       }
     }
 
+    // 如果没有需要上传的图片，直接返回
+    if (uploadItems.length === 0) {
+      return
+    }
+
+    // 压缩图片
     await compressImg(uploadItems)
+
+    // 上传图片
     const resultArr = await opts.upload(uploadItems)
+
+    // 更新映射表和缓存
     uploadItems.forEach(({ key, cacheKey, name }, index) => {
-      imgsMap[key] = resultArr[index].url
-      cache[cacheKey] = resultArr[index].url
-      logInfo[name].url = resultArr[index].url
-      delete bundle[key]
+      const url = resultArr[index].url
+      imgsMap[key!] = url
+      cache[cacheKey!] = url
+      logInfo[name].url = url
+      delete bundle[key!]
     })
 
-    updateCache()
+    await updateCache()
   }
 
-  async function replaceImgPath(bundle) {
+  function replaceImgPath(bundle: OutputBundle): void {
+    // 构建图片路径匹配正则
+    const imageExtPattern = IMAGE_EXTENSIONS.join('|')
     const imageRegex = new RegExp(
-      `(?:\.\.\/|\\.\\.)*${config.base}(${config.build.assetsDir}/.*?\\.(?:jpg|jpeg|png|gif|bmp|webp))`,
+      `(?:\\.\\.\\/|\\.\\.)*${config.base}(${config.build.assetsDir}/.*?\\.(${imageExtPattern}))`,
       'gi'
     )
-    const replaceFunc: Function = (match, p1) => {
+
+    const replaceFunc = (match: string, p1: string): string => {
       return imgsMap[p1] || match
     }
 
-    const chunkKeys = Object.keys(bundle)
-    chunkKeys.forEach((key) => {
-      const item = bundle[key]
-      if (item.source) {
-        item.source = item.source.replace(imageRegex, replaceFunc)
-      } else {
-        item.code = item.code.replace(imageRegex, replaceFunc)
+    // 遍历所有 bundle 项，替换图片路径
+    for (const item of Object.values(bundle)) {
+      if (item.type === 'asset') {
+        const assetItem = item as BundleAsset
+        if (typeof assetItem.source === 'string') {
+          assetItem.source = assetItem.source.replace(imageRegex, replaceFunc)
+        }
+      } else if (item.type === 'chunk') {
+        const chunkItem = item as BundleChunk
+        chunkItem.code = chunkItem.code.replace(imageRegex, replaceFunc)
       }
-    })
+    }
   }
 
   return {
     name: 'vite-img-upload',
-    enforce: 'post' as any,
-    configResolved(cfg) {
+    enforce: 'post' as const,
+
+    configResolved(cfg: ResolvedConfig) {
       config = cfg
     },
-    generateBundle: async (_, bundle) => {
-      console.log('\ngenerateBundle')
+
+    async generateBundle(_, bundle: OutputBundle) {
+      logger('info', 'vite-img-upload', '\n开始处理图片资源...')
       await uploadImg(bundle)
       replaceImgPath(bundle)
     },
+
     closeBundle() {
       if (!opts.log) return
-      console.info(ansi.greenBright('\nvite-img-upload:'))
-      for (const key in logInfo) {
-        const item = logInfo[key]
+
+      const logEntries = Object.entries(logInfo)
+      if (logEntries.length === 0) {
+        logger('success', 'vite-img-upload', '\n没有图片需要处理')
+        return
+      }
+
+      logger('success', 'vite-img-upload', '\n处理结果:')
+
+      for (const [key, item] of logEntries) {
         const sizeChange =
           item.oldSize > item.newSize
-            ? `compress: ${item.oldSize} -> ${item.newSize}`
-            : 'compress: none'
-        console.info(`${ansi.yellow(key)}: ${item.url} ${sizeChange}`)
+            ? `压缩: ${item.oldSize}B -> ${item.newSize}B (节省 ${((1 - item.newSize / item.oldSize) * 100).toFixed(2)}%)`
+            : '压缩: 无'
+        logger(
+          'success',
+          'vite-img-upload',
+          `${ansi.yellow(key)}: ${item.url || '未上传'} ${sizeChange}`,
+          true
+        )
       }
-      console.info(ansi.greenBright('\nvite-img-upload finished!'))
+
+      logger('success', 'vite-img-upload', '处理完成！\n')
     }
   }
 }
