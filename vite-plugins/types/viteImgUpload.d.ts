@@ -10,9 +10,8 @@ export type AssetMatcher = RegExp | string | string[]
  */
 export interface UploadItem {
   key?: string
-  cacheKey?: string
   name: string
-  md5Name: string
+  hashedFileName: string
   source: Buffer
 }
 

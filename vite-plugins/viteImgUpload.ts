@@ -139,20 +139,19 @@ export default function ViteImgUpload(opts: ViteImgUploadOptions) {
     for (const [key, item] of Object.entries(bundle)) {
       if (item.type === 'asset' && checkAsset(item.name)) {
         const assetItem = item as BundleAsset
-        const cacheKey = `${key}-${assetItem.source.toString().length}`
 
-        if (cache[cacheKey]) {
+        // 直接使用 key 作为缓存键，因为 Vite 的 key 已经包含了文件内容的 hash，ex.assets/avatar-CZJfXgmf.jpg
+        if (cache[key]) {
           // 使用缓存的 URL
-          imgsMap[key] = cache[cacheKey]
+          imgsMap[key] = cache[key]
           delete bundle[key]
         } else {
           // 需要上传的资源
-          const md5Name = path.basename(assetItem.fileName)
+          const hashedFileName = path.basename(assetItem.fileName) // ex.avatar-CZJfXgmf.jpg
           uploadItems.push({
             key,
-            cacheKey,
             name: assetItem.name,
-            md5Name,
+            hashedFileName,
             source: assetItem.source as Buffer
           })
         }
@@ -171,10 +170,10 @@ export default function ViteImgUpload(opts: ViteImgUploadOptions) {
     const resultArr = await opts.upload(uploadItems)
 
     // 更新映射表和缓存
-    uploadItems.forEach(({ key, cacheKey, name }, index) => {
+    uploadItems.forEach(({ key, name }, index) => {
       const url = resultArr[index].url
       imgsMap[key!] = url
-      cache[cacheKey!] = url
+      cache[key!] = url
       logInfo[name].url = url
       delete bundle[key!]
     })
@@ -185,23 +184,51 @@ export default function ViteImgUpload(opts: ViteImgUploadOptions) {
   function replaceImgPath(bundle: OutputBundle): void {
     // 构建图片路径匹配正则
     const imageExtPattern = IMAGE_EXTENSIONS.join('|')
+    // 转义 config.base 中的特殊字符（如 . * + ? 等）
+    const escapedBase = config.base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    // 转义 assetsDir（通常就是 "assets"，但为了安全还是转义）
+    const escapedAssetsDir = config.build.assetsDir.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+    // 文件名模式：允许字母、数字、连字符、下划线、点（用于 hash）
+    // 例如：avatar-CZJfXgmf.jpg, logo_v2-Dt-tB2u3.png
+    const fileNamePattern = '[a-zA-Z0-9._-]+'
+
+    // 优化后的正则表达式，匹配多种路径格式：
+    // 1. 绝对路径：/assets/image.jpg 或 /base/assets/image.jpg
+    // 2. 相对路径：../assets/image.jpg 或 ../../assets/image.jpg
+    // 3. 当前目录：./assets/image.jpg
+    // 4. 直接路径：assets/image.jpg（较少见）
+    //
+    // 正则结构：
+    // - (?:(?:\\.\\./)+|(?:\\./)?|) - 可选的相对路径前缀（../ 或 ./ 或空）
+    // - ${escapedBase} - base 路径（通常是 /）
+    // - (${escapedAssetsDir}/${fileNamePattern}\\.(${imageExtPattern})) - 捕获组：assets/文件名.扩展名
     const imageRegex = new RegExp(
-      `(?:\\.\\.\\/|\\.\\.)*${config.base}(${config.build.assetsDir}/.*?\\.(${imageExtPattern}))`,
+      `(?:(?:\\.\\./)+|(?:\\./)?|)${escapedBase}(${escapedAssetsDir}/${fileNamePattern}\\.(${imageExtPattern}))`,
       'gi'
     )
 
     const replaceFunc = (match: string, p1: string): string => {
-      return imgsMap[p1] || match
+      // p1 是捕获的路径，格式：assets/文件名-hash.扩展名
+      // 例如：assets/avatar-CZJfXgmf.jpg
+      // 这个格式与 bundle 的 key 相同，可以直接用于查找映射
+      const url = imgsMap[p1]
+      if (url) {
+        return url
+      }
+      return match
     }
 
     // 遍历所有 bundle 项，替换图片路径
     for (const item of Object.values(bundle)) {
       if (item.type === 'asset') {
         const assetItem = item as BundleAsset
+        // 只处理字符串类型的 source（如 CSS 文件中的 url()）
         if (typeof assetItem.source === 'string') {
           assetItem.source = assetItem.source.replace(imageRegex, replaceFunc)
         }
       } else if (item.type === 'chunk') {
+        // 处理 JS 代码中的图片路径引用
         const chunkItem = item as BundleChunk
         chunkItem.code = chunkItem.code.replace(imageRegex, replaceFunc)
       }
