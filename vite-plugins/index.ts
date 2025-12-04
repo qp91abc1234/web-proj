@@ -7,6 +7,7 @@ import { visualizer } from 'rollup-plugin-visualizer'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 
 import ViteHtmlTransform from './viteHtmlTransform'
+import viteImgCompress from './viteImgCompress'
 
 import type { PluginOption } from 'vite'
 
@@ -69,15 +70,24 @@ export function getPlugins(viteEnv: Env.ImportMeta, isBuild: boolean): PluginOpt
     )
   }
 
-  // 构建时：按需启用打包体积分析
-  if (isBuild && isTrue(viteEnv.VITE_VISUALIZER_TOOL)) {
-    plugins = plugins.concat(
-      visualizer({
-        emitFile: true,
-        filename: 'stat.html',
-        open: true
+  if (isBuild) {
+    // 构建时启用图片压缩
+    plugins.push(
+      viteImgCompress({
+        enable: true
       })
     )
+
+    // 按需启用打包体积分析
+    if (isTrue(viteEnv.VITE_VISUALIZER_TOOL)) {
+      plugins = plugins.concat(
+        visualizer({
+          emitFile: true,
+          filename: 'stat.html',
+          open: true
+        })
+      )
+    }
   }
 
   return plugins
