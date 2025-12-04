@@ -19,5 +19,5 @@
 
     "types": ["element-plus/global"]
   },
-  "include": ["vite.config.ts", "src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"]
+  "include": ["vite-env.d.ts", "src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"]
 }
