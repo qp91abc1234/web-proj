@@ -2,8 +2,8 @@ import path from 'node:path'
 import sharp from 'sharp'
 import ansi from 'ansi-colors'
 import type { Plugin } from 'vite'
-import type { ViteImgCompressOptions, OutputBundle, OutputAsset } from './types/viteImgCompress'
-import { createLogger } from './utils/logger'
+import type { ViteImgCompressOptions, OutputBundle, OutputAsset } from '../types/viteImgCompress'
+import { createLogger } from '../utils/logger'
 
 const IMAGE_REGEX = /\.(jpg|jpeg|png|gif|webp|avif)$/i
 

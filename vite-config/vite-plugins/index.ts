@@ -8,6 +8,7 @@ import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 
 import ViteHtmlTransform from './viteHtmlTransform'
 import viteImgCompress from './viteImgCompress'
+import viteImgUpload from './viteImgUpload'
 
 import type { PluginOption } from 'vite'
 
@@ -75,6 +76,21 @@ export function getPlugins(viteEnv: Env.ImportMeta, isBuild: boolean): PluginOpt
     plugins.push(
       viteImgCompress({
         enable: true
+      })
+    )
+
+    // 构建时启用图片上传（在图片压缩后执行）
+    // 注意：需要配置 upload 函数才能启用
+    plugins.push(
+      viteImgUpload({
+        enable: true,
+        // 上传函数示例 - 需要根据实际情况实现
+        upload: async () => {
+          // 示例：上传到 OSS/CDN
+          // const url = await uploadToOSS(fileName, content)
+          // return url
+          return ''
+        }
       })
     )
 

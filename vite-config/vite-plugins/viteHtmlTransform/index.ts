@@ -5,8 +5,8 @@ import type { Options as EJSOptions } from 'ejs'
 import type { Options as MinifyOptions } from 'html-minifier-terser'
 import { minify as minifyFn } from 'html-minifier-terser'
 import ansi from 'ansi-colors'
-import { createLogger } from './utils/logger'
-import type { ViteHtmlTransformOptions } from './types/viteHtmlTransform'
+import { createLogger } from '../utils/logger'
+import type { ViteHtmlTransformOptions } from '../types/viteHtmlTransform'
 
 /**
  * 默认的 HTML 压缩配置
