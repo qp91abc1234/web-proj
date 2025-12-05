@@ -36,20 +36,23 @@ export async function uploadWithConcurrencyLimit<T>(
   tasks: (() => Promise<T>)[],
   limit: number
 ): Promise<T[]> {
-  const results: T[] = []
-  const executing: Promise<void>[] = []
+  const results: T[] = new Array(tasks.length)
+  const executing = new Set<Promise<void>>()
 
-  for (const task of tasks) {
-    const promise = task().then((result) => {
-      results.push(result)
-      // 从执行队列中移除已完成的任务
-      executing.splice(executing.indexOf(promise), 1)
-    })
+  for (const [index, task] of tasks.entries()) {
+    const promise = task()
+      .then((result) => {
+        results[index] = result
+      })
+      .finally(() => {
+        // 从执行队列中移除已完成的任务
+        executing.delete(promise)
+      })
 
-    executing.push(promise)
+    executing.add(promise)
 
     // 当达到并发限制时，等待其中一个任务完成
-    if (executing.length >= limit) {
+    if (executing.size >= limit) {
       await Promise.race(executing)
     }
   }

@@ -43,7 +43,7 @@ export default function viteImgCompress(options: ViteImgCompressOptions = {}): P
       const isExcluded = excludes.some((pattern) =>
         pattern instanceof RegExp ? pattern.test(fileName) : fileName.includes(pattern)
       )
-      if (isExcluded) return true
+      if (isExcluded) return false
     }
 
     return true
