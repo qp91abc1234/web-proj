@@ -94,8 +94,8 @@ instance.interceptors.response.use(
     return data
   },
   (error: AxiosError) => {
-    // 网络错误、超时、非 2xx HTTP 状态等
-    // 统一向上抛出，由业务层或全局异常处理决定后续行为
+    // 处理网络错误、超时、系统级错误（如 502/504 等非业务层面的 HTTP 异常）
+    // 业务层面的错误（即使是 500）因服务端统一返回 HTTP 200，会在上方的 onFulfilled 中被处理
     return Promise.reject(error)
   }
 )

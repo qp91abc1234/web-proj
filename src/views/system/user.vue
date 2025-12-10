@@ -2,6 +2,7 @@
 import { ref, reactive } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus'
 import { Delete, Edit, Plus, Refresh, Search } from '@element-plus/icons-vue'
+import { formatDateTime } from '@/common/utils'
 
 interface User {
   id: number
@@ -138,7 +139,7 @@ const handleSave = async (formEl: FormInstance | undefined) => {
         const newUser = {
           ...userForm,
           id: Date.now(),
-          createTime: new Date().toLocaleString('zh-CN')
+          createTime: formatDateTime()
         }
         tableData.value.unshift(newUser)
         pagination.total++

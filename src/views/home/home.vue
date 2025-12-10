@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { formatDateTime } from '@/common/utils'
 import {
   CircleCheck,
   DataAnalysis,
@@ -35,15 +36,7 @@ const greeting = computed(() => {
 
 // 格式化时间
 const formattedTime = computed(() => {
-  return currentTime.value.toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false
-  })
+  return formatDateTime(currentTime.value)
 })
 
 // 统计数据

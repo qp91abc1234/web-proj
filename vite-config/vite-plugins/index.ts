@@ -5,6 +5,7 @@ import UnoCSS from 'unocss/vite'
 import vueDevTools from 'vite-plugin-vue-devtools'
 import { visualizer } from 'rollup-plugin-visualizer'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
+import dayjs from 'dayjs'
 
 import ViteHtmlTransform from './viteHtmlTransform'
 import viteImgCompress from './viteImgCompress'
@@ -18,11 +19,7 @@ import type { PluginOption } from 'vite'
  * @param isBuild 是否为构建命令
  */
 export function getPlugins(viteEnv: Env.ImportMeta, isBuild: boolean): PluginOption[] {
-  // 使用北京时间（Asia/Shanghai），格式类似：2025/12/03 20:15:30
-  const buildTime = new Date().toLocaleString('zh-CN', {
-    timeZone: 'Asia/Shanghai',
-    hour12: false
-  })
+  const buildTime = dayjs().format('YYYY-MM-DD HH:mm:ss')
 
   let plugins: PluginOption[] = [
     vue(),
