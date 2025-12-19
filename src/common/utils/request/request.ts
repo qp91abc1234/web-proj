@@ -1,4 +1,4 @@
-import axios, { type AxiosInstance, type AxiosError } from 'axios'
+import axios, { type AxiosInstance, type AxiosError, type AxiosResponse } from 'axios'
 
 import { useUserStore } from '@/store/modules/userStore'
 
@@ -44,17 +44,29 @@ instance.interceptors.request.use(
 
 /**
  * 响应拦截：
- * - 统一处理 401（基于 data.status）
- * - 统一校验 data.status !== 200
- * - 其他情况返回 data 本身
+ * - 根据 HTTP 状态码和 code 字段处理错误
+ * - TOKEN_EXPIRED: 续签 token
+ * - TOKEN_INVALID: 清除 token，跳转登录
+ * - 其他错误: 正常 reject
  */
 instance.interceptors.response.use(
-  (response: any) => {
+  (response: AxiosResponse) => {
+    // 成功响应（HTTP 200）- 直接返回 data
+    return response.data
+  },
+  (error: AxiosError<{ code: string; message: string }>) => {
     const userStore = useUserStore()
-    const { data, config } = response
+    const { response, config } = error
 
-    // 1. 处理自定义 401（未登录 / token 过期）
-    if (data.status === 401) {
+    // 没有响应（网络错误、超时等）
+    if (!response) {
+      return Promise.reject(error)
+    }
+
+    const { status, data } = response
+
+    // Token 过期 - 续签
+    if (status === 401 && data.code === 'TOKEN_EXPIRED') {
       if (!refreshing) {
         refreshing = true
         userStore
@@ -64,7 +76,7 @@ instance.interceptors.response.use(
           })
           .catch(() => {
             userStore.logout()
-            queue.forEach(({ reject }) => reject(response))
+            queue.forEach(({ reject }) => reject(error))
           })
           .finally(() => {
             refreshing = false
@@ -75,27 +87,19 @@ instance.interceptors.response.use(
       // 将当前请求挂起，等待刷新结果
       return new Promise((resolve, reject) => {
         queue.push({
-          resolve: () => resolve(instance(config)),
+          resolve: () => resolve(instance(config!)),
           reject
         })
       })
     }
 
-    // 2. 非 200 状态统一视为 API 业务错误
-    // 给 response 打上标记，方便全局错误处理快速识别
-    if (data.status !== 200) {
-      return Promise.reject({
-        isApiBusinessError: true,
-        response
-      })
+    // Token 无效 - 清除 token，跳转登录
+    if (status === 401 && data.code === 'TOKEN_INVALID') {
+      userStore.logout()
+      // 可以在这里跳转到登录页
+      // router.push('/login')
     }
 
-    // 3. 成功：直接返回 data（保持你原有行为）
-    return data
-  },
-  (error: AxiosError) => {
-    // 处理网络错误、超时、系统级错误（如 502/504 等非业务层面的 HTTP 异常）
-    // 业务层面的错误（即使是 500）因服务端统一返回 HTTP 200，会在上方的 onFulfilled 中被处理
     return Promise.reject(error)
   }
 )

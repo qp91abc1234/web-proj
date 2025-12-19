@@ -126,32 +126,38 @@ export function setupErrorHandling(app: App<Element>) {
     // 3.2 Axios 网络错误（超时、500、404 等）
     if (reason && typeof reason === 'object' && (reason as any).isAxiosError) {
       const axiosError = reason as any
+      const response = axiosError.response
+      const responseData = response?.data
+
+      // 优先使用后端返回的业务错误信息
+      const errorMessage = responseData?.message || axiosError.message || '网络请求失败'
+      const errorCode = responseData?.code || axiosError.code
+      const httpStatus = response?.status
 
       // 记录日志
       logger.error(
-        axiosError.message || '网络请求失败',
+        errorMessage,
         {
           tag: 'error:http',
           url: axiosError.config?.url,
           method: axiosError.config?.method,
-          status: axiosError.response?.status,
-          code: axiosError.code,
+          status: httpStatus,
+          code: errorCode,
           unhandled: true
         },
         axiosError
       )
 
-      // 用户提示：根据错误类型给出友好文案
-      let message = '网络异常，请稍后重试'
+      // 用户提示：优先使用后端返回的 message，否则根据错误类型给出友好文案
+      let message = errorMessage
 
-      if (axiosError.code === 'ECONNABORTED') {
-        message = '请求超时，请检查网络'
-      } else if (axiosError.response?.status === 500) {
-        message = '服务器开小差了，请稍后重试'
-      } else if (axiosError.response?.status === 404) {
-        message = '接口不存在或已下线'
-      } else if (axiosError.response?.status === 403) {
-        message = '暂无权限访问'
+      if (!responseData?.message) {
+        // 如果没有后端消息，根据错误类型给出默认提示
+        if (axiosError.code === 'ECONNABORTED') {
+          message = '请求超时，请检查网络'
+        } else {
+          message = '服务器开小差了，请稍后重试'
+        }
       }
 
       ElMessage.error(message)

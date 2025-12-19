@@ -4,13 +4,11 @@ import { instance } from './request'
 
 /**
  * 后端统一响应结构
- * 根据你的真实结构可以进一步细化（例如 message、code 等）
+ * 成功：{ message: 'success', data: T }
  */
 interface ApiResponse<T = any> {
-  status: number
+  message: string
   data: T
-  message?: string
-  [key: string]: any
 }
 
 /**
