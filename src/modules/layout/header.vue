@@ -85,7 +85,7 @@ function handleRightClick(tab: Tab, { clientX, clientY }: MouseEvent) {
         <el-breadcrumb class="ml-10px" :separator-icon="ArrowRight">
           <el-breadcrumb-item
             v-for="item in breadcrumbList"
-            :key="item.jumpPath"
+            :key="item.title + item.jumpPath"
             :to="{ path: item.jumpPath }"
           >
             {{ item.title }}

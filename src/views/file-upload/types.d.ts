@@ -11,27 +11,13 @@ export interface FileChunk {
 /**
  * 上传文件信息
  */
-export interface UploadedFile {
+export interface UploadFile {
   id: string
   name: string
   url: string
   size: number
   type: string
-  status: 'uploading' | 'success' | 'error'
-  progress: number
-  errorMessage?: string
-}
-
-/**
- * 上传中的文件信息
- */
-export interface UploadingFile {
-  id: string
-  file: File
-  chunks: FileChunk[]
-  uploadedChunks: number
-  totalChunks: number
-  progress: number
   status: 'uploading' | 'merging' | 'success' | 'error'
+  progress: number
   errorMessage?: string
 }

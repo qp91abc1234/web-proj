@@ -4,9 +4,9 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Upload, View, Document } from '@element-plus/icons-vue'
 import { uploadFiles, uploadChunk, mergeChunks } from '@/common/api/fileUpload'
 import { createFileChunks, CHUNK_SIZE, isImage, formatFileSize, generateId } from './utils'
-import type { UploadedFile, UploadingFile } from './types'
+import type { UploadFile } from './types'
 
-const fileList = ref<UploadedFile[]>([])
+const fileList = ref<UploadFile[]>([])
 // 预览相关
 const previewImageRefs = ref<Record<string, any>>({})
 const previewSrcList = computed(() => {
@@ -23,27 +23,28 @@ const handleFileChange = (files: FileList | File[] | null) => {
 
   const fileArray = Array.isArray(files) ? files : Array.from(files)
 
-  // 区分小文件和大文件
+  // 按原始顺序处理文件，保持列表顺序一致
   const smallFiles: File[] = []
-  const largeFiles: File[] = []
 
   fileArray.forEach((file) => {
     if (file.size < CHUNK_SIZE) {
+      // 小文件收集起来，等待批量上传
       smallFiles.push(file)
     } else {
-      largeFiles.push(file)
+      // 遇到大文件时，先上传之前收集的小文件（如果有）
+      if (smallFiles.length > 0) {
+        handleNormalUpload(smallFiles)
+        smallFiles.length = 0 // 清空已处理的小文件
+      }
+      // 大文件立即处理
+      handleChunkUpload(file)
     }
   })
 
-  // 小文件一次性上传
+  // 处理剩余的小文件
   if (smallFiles.length > 0) {
     handleNormalUpload(smallFiles)
   }
-
-  // 大文件逐个分片上传
-  largeFiles.forEach((file) => {
-    handleChunkUpload(file)
-  })
 }
 
 /**
@@ -53,7 +54,7 @@ const handleNormalUpload = async (files: File[]) => {
   if (files.length === 0) return
 
   // 为每个文件创建上传记录
-  const uploadedFiles: UploadedFile[] = files.map((file) => {
+  const fileItems: UploadFile[] = files.map((file) => {
     const id = generateId()
     fileList.value.push({
       id,
@@ -70,7 +71,7 @@ const handleNormalUpload = async (files: File[]) => {
   try {
     const result = await uploadFiles(files, (progress) => {
       // 整体进度平均分配给所有文件
-      uploadedFiles.forEach((uploadedFile) => {
+      fileItems.forEach((uploadedFile) => {
         uploadedFile.progress = progress
       })
     })
@@ -78,7 +79,7 @@ const handleNormalUpload = async (files: File[]) => {
     // 如果执行到这里，说明请求成功，result 一定包含所有文件的 URL
     if (result && result.length > 0) {
       // 将返回的 URL 分配给对应的文件
-      uploadedFiles.forEach((uploadedFile, index) => {
+      fileItems.forEach((uploadedFile, index) => {
         uploadedFile.url = result[index]
         uploadedFile.status = 'success'
         uploadedFile.progress = 100
@@ -89,7 +90,7 @@ const handleNormalUpload = async (files: File[]) => {
     }
   } catch (error: any) {
     // 所有文件标记为失败
-    uploadedFiles.forEach((uploadedFile) => {
+    fileItems.forEach((uploadedFile) => {
       uploadedFile.status = 'error'
       uploadedFile.errorMessage = error.message || '上传失败'
     })
@@ -103,17 +104,9 @@ const handleNormalUpload = async (files: File[]) => {
 const handleChunkUpload = async (file: File) => {
   const id = generateId()
   const chunks = createFileChunks(file)
-  const uploadingFile: UploadingFile = {
-    id,
-    file,
-    chunks,
-    uploadedChunks: 0,
-    totalChunks: chunks.length,
-    progress: 0,
-    status: 'uploading'
-  }
+  let uploadedChunks = 0
 
-  // 先添加到文件列表（显示上传中状态）
+  // 添加到文件列表
   fileList.value.push({
     id,
     name: file.name,
@@ -123,7 +116,7 @@ const handleChunkUpload = async (file: File) => {
     status: 'uploading',
     progress: 0
   })
-  const uploadedFile: UploadedFile = fileList.value[fileList.value.length - 1]
+  const fileItem: UploadFile = fileList.value[fileList.value.length - 1]
 
   try {
     // 上传所有分片
@@ -133,32 +126,28 @@ const handleChunkUpload = async (file: File) => {
         // 计算整体进度
         const chunkWeight = 90 / chunks.length // 90% 用于上传，10% 用于合并
         const currentChunkProgress = (chunkProgress / 100) * chunkWeight
-        const previousChunksProgress = (uploadingFile.uploadedChunks / chunks.length) * 90
+        const previousChunksProgress = (uploadedChunks / chunks.length) * 90
         const totalProgress = previousChunksProgress + currentChunkProgress
-        uploadingFile.progress = totalProgress
-        uploadedFile.progress = Math.round(totalProgress)
+        fileItem.progress = Math.round(totalProgress)
       })
 
-      uploadingFile.uploadedChunks++
-      uploadedFile.progress = Math.round((uploadingFile.uploadedChunks / chunks.length) * 90) // 90% 用于上传，10% 用于合并
+      uploadedChunks++
+      fileItem.progress = Math.round((uploadedChunks / chunks.length) * 90) // 90% 用于上传，10% 用于合并
     }
 
     // 合并分片
-    uploadingFile.status = 'merging'
-    uploadedFile.progress = 95
+    fileItem.status = 'merging'
+    fileItem.progress = 95
     const fileUrl = await mergeChunks(file.name)
-    uploadingFile.status = 'success'
-    uploadedFile.status = 'success'
-    uploadedFile.url = fileUrl
-    uploadedFile.progress = 100
+    fileItem.status = 'success'
+    fileItem.url = fileUrl
+    fileItem.progress = 100
 
     ElMessage.success(`文件 ${file.name} 上传成功`)
   } catch (error: any) {
-    uploadingFile.status = 'error'
-    uploadingFile.errorMessage = error.message || '上传失败'
-    uploadedFile.status = 'error'
-    uploadedFile.errorMessage = uploadingFile.errorMessage
-    ElMessage.error(`文件 ${file.name} 上传失败：${uploadedFile.errorMessage}`)
+    fileItem.status = 'error'
+    fileItem.errorMessage = error.message || '上传失败'
+    ElMessage.error(`文件 ${file.name} 上传失败：${fileItem.errorMessage}`)
   }
 }
 
