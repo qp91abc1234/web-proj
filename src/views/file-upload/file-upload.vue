@@ -130,7 +130,7 @@ const handleNormalUpload = async (
         uploadedFile.status = 'success'
         uploadedFile.progress = 100
       })
-      return { success: files.length, failed: 0 }
+      return { success: result.length, failed: 0 }
     } else {
       throw new Error('上传失败：未返回文件 URL')
     }
