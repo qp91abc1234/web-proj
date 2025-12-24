@@ -22,51 +22,78 @@ const handleFileChange = (files: FileList | File[] | null) => {
   if (!files || files.length === 0) return
 
   const fileArray = Array.isArray(files) ? files : Array.from(files)
+
+  // 区分小文件和大文件
+  const smallFiles: File[] = []
+  const largeFiles: File[] = []
+
   fileArray.forEach((file) => {
-    // 判断使用普通上传还是分片上传
     if (file.size < CHUNK_SIZE) {
-      // 普通上传（小于 1MB）
-      handleNormalUpload(file)
+      smallFiles.push(file)
     } else {
-      // 分片上传（大于等于 1MB）
-      handleChunkUpload(file)
+      largeFiles.push(file)
     }
+  })
+
+  // 小文件一次性上传
+  if (smallFiles.length > 0) {
+    handleNormalUpload(smallFiles)
+  }
+
+  // 大文件逐个分片上传
+  largeFiles.forEach((file) => {
+    handleChunkUpload(file)
   })
 }
 
 /**
- * 普通上传
+ * 普通上传（支持多文件）
  */
-const handleNormalUpload = async (file: File) => {
-  const id = generateId()
-  fileList.value.push({
-    id,
-    name: file.name,
-    url: '',
-    size: file.size,
-    type: file.type,
-    status: 'uploading',
-    progress: 0
+const handleNormalUpload = async (files: File[]) => {
+  if (files.length === 0) return
+
+  // 为每个文件创建上传记录
+  const uploadedFiles: UploadedFile[] = files.map((file) => {
+    const id = generateId()
+    fileList.value.push({
+      id,
+      name: file.name,
+      url: '',
+      size: file.size,
+      type: file.type,
+      status: 'uploading',
+      progress: 0
+    })
+    return fileList.value[fileList.value.length - 1]
   })
-  const uploadedFile: UploadedFile = fileList.value[fileList.value.length - 1]
 
   try {
-    const result = await uploadFiles([file], (progress) => {
-      uploadedFile.progress = progress
+    const result = await uploadFiles(files, (progress) => {
+      // 整体进度平均分配给所有文件
+      uploadedFiles.forEach((uploadedFile) => {
+        uploadedFile.progress = progress
+      })
     })
 
+    // 如果执行到这里，说明请求成功，result 一定包含所有文件的 URL
     if (result && result.length > 0) {
-      uploadedFile.url = result[0]
-      uploadedFile.status = 'success'
-      uploadedFile.progress = 100
-      ElMessage.success(`文件 ${file.name} 上传成功`)
+      // 将返回的 URL 分配给对应的文件
+      uploadedFiles.forEach((uploadedFile, index) => {
+        uploadedFile.url = result[index]
+        uploadedFile.status = 'success'
+        uploadedFile.progress = 100
+      })
+      ElMessage.success(`成功上传 ${files.length} 个文件`)
     } else {
       throw new Error('上传失败：未返回文件 URL')
     }
   } catch (error: any) {
-    uploadedFile.status = 'error'
-    uploadedFile.errorMessage = error.message || '上传失败'
-    ElMessage.error(`文件 ${file.name} 上传失败：${uploadedFile.errorMessage}`)
+    // 所有文件标记为失败
+    uploadedFiles.forEach((uploadedFile) => {
+      uploadedFile.status = 'error'
+      uploadedFile.errorMessage = error.message || '上传失败'
+    })
+    ElMessage.error(`文件上传失败：${error.message || '上传失败'}`)
   }
 }
 
@@ -87,7 +114,7 @@ const handleChunkUpload = async (file: File) => {
   }
 
   // 先添加到文件列表（显示上传中状态）
-  const uploadedFile: UploadedFile = {
+  fileList.value.push({
     id,
     name: file.name,
     url: '',
@@ -95,8 +122,8 @@ const handleChunkUpload = async (file: File) => {
     type: file.type,
     status: 'uploading',
     progress: 0
-  }
-  fileList.value.push(uploadedFile)
+  })
+  const uploadedFile: UploadedFile = fileList.value[fileList.value.length - 1]
 
   try {
     // 上传所有分片
@@ -163,10 +190,6 @@ const handleDrop = (event: DragEvent) => {
   if (files) {
     handleFileChange(files)
   }
-}
-
-const handleDragOver = (event: DragEvent) => {
-  event.preventDefault()
 }
 
 /**
@@ -242,7 +265,7 @@ const stats = computed(() => {
           }
         "
         @drop="handleDrop"
-        @dragover="handleDragOver"
+        @dragover.prevent="() => {}"
       >
         <el-icon class="upload-icon" :size="64"><Upload /></el-icon>
         <div class="upload-text">
@@ -270,6 +293,8 @@ const stats = computed(() => {
                 :src="file.url"
                 :preview-src-list="previewSrcList"
                 :initial-index="previewSrcList.findIndex((url) => url === file.url)"
+                :width="60"
+                :height="60"
                 fit="cover"
                 class="file-thumbnail"
                 :preview-teleported="true"
@@ -437,11 +462,13 @@ const stats = computed(() => {
 
           .file-icon {
             flex-shrink: 0;
+            width: 60px;
+            height: 60px;
 
             .file-thumbnail {
-              width: 60px;
-              height: 60px;
-              object-fit: cover;
+              width: 100%;
+              height: 100%;
+              overflow: hidden;
               border-radius: 4px;
             }
           }
