@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Upload, View, Document } from '@element-plus/icons-vue'
+import { Upload, View, Document, RefreshRight } from '@element-plus/icons-vue'
 import { uploadFiles, uploadChunk, mergeChunks } from '@/common/api/fileUpload'
 import { createFileChunks, CHUNK_SIZE, isImage, formatFileSize, generateId } from './utils'
 import type { UploadFile } from './types'
@@ -18,13 +18,14 @@ const previewSrcList = computed(() => {
 /**
  * 处理文件选择
  */
-const handleFileChange = (files: FileList | File[] | null) => {
+const handleFileChange = async (files: FileList | File[] | null) => {
   if (!files || files.length === 0) return
 
   const fileArray = Array.isArray(files) ? files : Array.from(files)
 
   // 按原始顺序处理文件，保持列表顺序一致
   const smallFiles: File[] = []
+  const uploadPromises: Promise<{ success: number; failed: number }>[] = []
 
   fileArray.forEach((file) => {
     if (file.size < CHUNK_SIZE) {
@@ -33,28 +34,115 @@ const handleFileChange = (files: FileList | File[] | null) => {
     } else {
       // 遇到大文件时，先上传之前收集的小文件（如果有）
       if (smallFiles.length > 0) {
-        handleNormalUpload(smallFiles)
+        uploadPromises.push(handleNormalUpload(smallFiles))
         smallFiles.length = 0 // 清空已处理的小文件
       }
       // 大文件立即处理
-      handleChunkUpload(file)
+      uploadPromises.push(handleChunkUpload(file))
     }
   })
 
   // 处理剩余的小文件
   if (smallFiles.length > 0) {
-    handleNormalUpload(smallFiles)
+    uploadPromises.push(handleNormalUpload(smallFiles))
+  }
+
+  // 等待所有上传完成，统计结果
+  const results = await Promise.all(uploadPromises)
+  let totalSuccess = 0
+  let totalFailed = 0
+
+  results.forEach((result) => {
+    totalSuccess += result.success
+    totalFailed += result.failed
+  })
+
+  // 显示统一提示
+  if (totalFailed === 0) {
+    ElMessage.success(`全部上传成功，共 ${totalSuccess} 个文件`)
+  } else if (totalSuccess === 0) {
+    ElMessage.error(`全部上传失败，共 ${totalFailed} 个文件`)
+  } else {
+    ElMessage.warning(`上传完成：成功 ${totalSuccess} 个，失败 ${totalFailed} 个`)
   }
 }
 
 /**
  * 普通上传（支持多文件）
+ * @param files 要上传的文件数组
+ * @param fileItems 可选，如果提供则使用现有的文件项（用于重试），否则创建新的
+ * @returns 返回成功和失败的数量
  */
-const handleNormalUpload = async (files: File[]) => {
-  if (files.length === 0) return
+const handleNormalUpload = async (
+  files: File[],
+  fileItems?: UploadFile[]
+): Promise<{ success: number; failed: number }> => {
+  if (files.length === 0) return { success: 0, failed: 0 }
 
-  // 为每个文件创建上传记录
-  const fileItems: UploadFile[] = files.map((file) => {
+  // 如果没有提供 fileItems，则创建新的文件项
+  if (!fileItems) {
+    fileItems = files.map((file) => {
+      const id = generateId()
+      fileList.value.push({
+        id,
+        name: file.name,
+        url: '',
+        size: file.size,
+        type: file.type,
+        status: 'uploading',
+        progress: 0,
+        errorMessage: '',
+        originalFile: file // 保存原始文件对象，用于重试
+      })
+      return fileList.value[fileList.value.length - 1]
+    })
+  }
+
+  try {
+    const result = await uploadFiles(files, (progress) => {
+      // 整体进度平均分配给所有文件
+      fileItems!.forEach((uploadedFile) => {
+        uploadedFile.progress = progress
+      })
+    })
+
+    // 如果执行到这里，说明请求成功，result 一定包含所有文件的 URL
+    if (result && result.length > 0) {
+      // 将返回的 URL 分配给对应的文件
+      fileItems!.forEach((uploadedFile, index) => {
+        uploadedFile.url = result[index]
+        uploadedFile.status = 'success'
+        uploadedFile.progress = 100
+      })
+      return { success: files.length, failed: 0 }
+    } else {
+      throw new Error('上传失败：未返回文件 URL')
+    }
+  } catch (error: any) {
+    // 所有文件标记为失败
+    fileItems!.forEach((uploadedFile) => {
+      uploadedFile.status = 'error'
+      uploadedFile.errorMessage = error.message || '上传失败'
+    })
+    return { success: 0, failed: files.length }
+  }
+}
+
+/**
+ * 分片上传
+ * @param file 要上传的文件
+ * @param fileItem 可选，如果提供则使用现有的文件项（用于重试），否则创建新的
+ * @returns 返回成功和失败的数量
+ */
+const handleChunkUpload = async (
+  file: File,
+  fileItem?: UploadFile
+): Promise<{ success: number; failed: number }> => {
+  const chunks = createFileChunks(file)
+  let uploadedChunks = 0
+
+  // 如果没有提供 fileItem，则创建新的文件项
+  if (!fileItem) {
     const id = generateId()
     fileList.value.push({
       id,
@@ -63,60 +151,12 @@ const handleNormalUpload = async (files: File[]) => {
       size: file.size,
       type: file.type,
       status: 'uploading',
-      progress: 0
+      progress: 0,
+      errorMessage: '',
+      originalFile: file // 保存原始文件对象，用于重试
     })
-    return fileList.value[fileList.value.length - 1]
-  })
-
-  try {
-    const result = await uploadFiles(files, (progress) => {
-      // 整体进度平均分配给所有文件
-      fileItems.forEach((uploadedFile) => {
-        uploadedFile.progress = progress
-      })
-    })
-
-    // 如果执行到这里，说明请求成功，result 一定包含所有文件的 URL
-    if (result && result.length > 0) {
-      // 将返回的 URL 分配给对应的文件
-      fileItems.forEach((uploadedFile, index) => {
-        uploadedFile.url = result[index]
-        uploadedFile.status = 'success'
-        uploadedFile.progress = 100
-      })
-      ElMessage.success(`成功上传 ${files.length} 个文件`)
-    } else {
-      throw new Error('上传失败：未返回文件 URL')
-    }
-  } catch (error: any) {
-    // 所有文件标记为失败
-    fileItems.forEach((uploadedFile) => {
-      uploadedFile.status = 'error'
-      uploadedFile.errorMessage = error.message || '上传失败'
-    })
-    ElMessage.error(`文件上传失败：${error.message || '上传失败'}`)
+    fileItem = fileList.value[fileList.value.length - 1]
   }
-}
-
-/**
- * 分片上传
- */
-const handleChunkUpload = async (file: File) => {
-  const id = generateId()
-  const chunks = createFileChunks(file)
-  let uploadedChunks = 0
-
-  // 添加到文件列表
-  fileList.value.push({
-    id,
-    name: file.name,
-    url: '',
-    size: file.size,
-    type: file.type,
-    status: 'uploading',
-    progress: 0
-  })
-  const fileItem: UploadFile = fileList.value[fileList.value.length - 1]
 
   try {
     // 上传所有分片
@@ -143,11 +183,39 @@ const handleChunkUpload = async (file: File) => {
     fileItem.url = fileUrl
     fileItem.progress = 100
 
-    ElMessage.success(`文件 ${file.name} 上传成功`)
+    return { success: 1, failed: 0 }
   } catch (error: any) {
     fileItem.status = 'error'
     fileItem.errorMessage = error.message || '上传失败'
-    ElMessage.error(`文件 ${file.name} 上传失败：${fileItem.errorMessage}`)
+    return { success: 0, failed: 1 }
+  }
+}
+
+/**
+ * 重试上传（单个文件）
+ */
+const handleRetry = async (fileItem: UploadFile) => {
+  // 重置状态
+  fileItem.status = 'uploading'
+  fileItem.progress = 0
+  fileItem.errorMessage = ''
+  fileItem.url = ''
+
+  // 根据文件大小决定使用普通上传还是分片上传
+  let result: { success: number; failed: number }
+  if (fileItem.originalFile.size < CHUNK_SIZE) {
+    // 普通上传（传入现有的 fileItem，避免重复添加）
+    result = await handleNormalUpload([fileItem.originalFile], [fileItem])
+  } else {
+    // 分片上传（传入现有的 fileItem，避免重复添加）
+    result = await handleChunkUpload(fileItem.originalFile, fileItem)
+  }
+
+  // 重试时显示单个文件的提示
+  if (result.success > 0) {
+    ElMessage.success(`文件 ${fileItem.name} 重试上传成功`)
+  } else {
+    ElMessage.error(`文件 ${fileItem.name} 重试失败：${fileItem.errorMessage}`)
   }
 }
 
@@ -316,9 +384,18 @@ const stats = computed(() => {
               type="primary"
               link
               :icon="View"
-              @click="previewImageRefs[file.id].showPreview()"
+              @click="previewImageRefs[file.id]?.showPreview()"
             >
               预览
+            </el-button>
+            <el-button
+              v-if="file.status === 'error'"
+              type="primary"
+              link
+              :icon="RefreshRight"
+              @click="handleRetry(file)"
+            >
+              重试
             </el-button>
           </div>
         </div>

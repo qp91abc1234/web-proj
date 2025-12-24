@@ -19,5 +19,6 @@ export interface UploadFile {
   type: string
   status: 'uploading' | 'merging' | 'success' | 'error'
   progress: number
-  errorMessage?: string
+  errorMessage: string
+  originalFile: File // 原始文件对象，用于重试
 }
