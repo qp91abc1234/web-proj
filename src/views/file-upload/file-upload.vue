@@ -5,6 +5,7 @@ import { Upload, View, Document, RefreshRight } from '@element-plus/icons-vue'
 import { uploadFiles, uploadChunk, mergeChunks } from '@/common/api/fileUpload'
 import { createFileChunks, CHUNK_SIZE, isImage, formatFileSize, generateId } from './utils'
 import type { UploadFile } from './types'
+import { debounce } from 'lodash-es'
 
 const fileList = ref<UploadFile[]>([])
 // 预览相关
@@ -14,6 +15,21 @@ const previewSrcList = computed(() => {
     .filter((file) => isImage(file.type) && file.status === 'success')
     .map((file) => file.url)
 })
+
+// 上传组件引用
+const uploadRef = ref()
+
+/**
+ * 处理文件选择（防抖包装）
+ */
+const handleFileSelect = debounce((_file: any, fileList: any[]) => {
+  const files = fileList.map((f: any) => f.raw).filter(Boolean)
+  if (files.length > 0) {
+    handleFileChange(files)
+    // 清空组件内部的文件列表，避免重复处理
+    uploadRef.value?.clearFiles()
+  }
+}, 100)
 
 /**
  * 处理文件选择
@@ -239,17 +255,6 @@ const handleClear = () => {
 }
 
 /**
- * 拖拽上传
- */
-const handleDrop = (event: DragEvent) => {
-  event.preventDefault()
-  const files = event.dataTransfer?.files
-  if (files) {
-    handleFileChange(files)
-  }
-}
-
-/**
  * 统计信息
  */
 const stats = computed(() => {
@@ -309,20 +314,13 @@ const stats = computed(() => {
       </template>
 
       <el-upload
+        ref="uploadRef"
         class="upload-area"
         drag
         :multiple="true"
         :auto-upload="false"
         :show-file-list="false"
-        :on-change="
-          (file) => {
-            if (file.raw) {
-              handleFileChange([file.raw])
-            }
-          }
-        "
-        @drop="handleDrop"
-        @dragover.prevent="() => {}"
+        :on-change="handleFileSelect"
       >
         <el-icon class="upload-icon" :size="64"><Upload /></el-icon>
         <div class="upload-text">
