@@ -34,7 +34,7 @@ const ROUTE_CONFIG: RouteConfigList = [
       {
         path: 'user',
         title: '用户管理',
-        compPath: '/src/views/system/user.vue'
+        compPath: '/src/views/user/user.vue'
       }
     ]
   },
@@ -45,7 +45,7 @@ const ROUTE_CONFIG: RouteConfigList = [
     children: [
       {
         path: 'file-upload',
-        title: '文件管理',
+        title: '文件上传',
         compPath: '/src/views/file-upload/file-upload.vue'
       }
     ]

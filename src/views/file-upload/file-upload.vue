@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { ElImage, ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { Upload, View, Document } from '@element-plus/icons-vue'
 import { uploadFiles, uploadChunk, mergeChunks } from '@/common/api/fileUpload'
 import { createFileChunks, CHUNK_SIZE, isImage, formatFileSize, generateId } from './utils'
