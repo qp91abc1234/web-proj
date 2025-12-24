@@ -2,23 +2,7 @@ import { computed } from 'vue'
 import { defineStore } from 'pinia'
 
 import { createStorageRef } from '@/common/utils/storage'
-import { requestPost } from '@/common/utils/request'
-
-/** 登录请求参数 */
-interface LoginParams {
-  /** 用户名 */
-  username: string
-  /** 密码 */
-  password: string
-}
-
-/** 认证响应数据 */
-interface AuthResponse {
-  /** 访问令牌 */
-  token: string
-  /** 刷新令牌 */
-  refreshToken: string
-}
+import { login as loginApi, refreshToken as refreshTokenApi } from '@/common/api/auth'
 
 /**
  * 用户状态 Store
@@ -60,17 +44,12 @@ export const useUserStore = defineStore('user', () => {
    * @param params - 登录参数
    * @throws 登录失败时抛出错误
    */
-  async function login(params: LoginParams): Promise<void> {
-    const { username, password } = params
-
-    const res = await requestPost<AuthResponse>('/auth/login', {
-      username,
-      password
-    })
+  async function login(params: { username: string; password: string }): Promise<void> {
+    const res = await loginApi(params)
 
     // 保存令牌
-    token.value = res.data?.token ?? ''
-    refreshToken.value = res.data?.refreshToken ?? ''
+    token.value = res?.token ?? ''
+    refreshToken.value = res?.refreshToken ?? ''
   }
 
   /**
@@ -83,13 +62,13 @@ export const useUserStore = defineStore('user', () => {
       throw new Error('No refresh token available')
     }
 
-    const res = await requestPost<AuthResponse>('/auth/refresh', {
+    const res = await refreshTokenApi({
       refreshToken: refreshToken.value
     })
 
     // 更新令牌
-    token.value = res.data?.token ?? ''
-    refreshToken.value = res.data?.refreshToken ?? ''
+    token.value = res?.token ?? ''
+    refreshToken.value = res?.refreshToken ?? ''
   }
 
   /**

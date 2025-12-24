@@ -37,6 +37,18 @@ const ROUTE_CONFIG: RouteConfigList = [
         compPath: '/src/views/system/user.vue'
       }
     ]
+  },
+  {
+    path: 'tools',
+    title: '工具中心',
+    icon: 'Tools',
+    children: [
+      {
+        path: 'file-upload',
+        title: '文件管理',
+        compPath: '/src/views/file-upload/file-upload.vue'
+      }
+    ]
   }
 ]
 

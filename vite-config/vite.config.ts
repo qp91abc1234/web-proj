@@ -33,7 +33,14 @@ export default defineConfig((env: ConfigEnv) => {
     },
     server: {
       host: '0.0.0.0',
-      port: 3500
+      port: 3500,
+      proxy: {
+        '/api': {
+          target: 'http://127.0.0.1:3000',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api/, '')
+        }
+      }
     }
   }
   return userConfig
