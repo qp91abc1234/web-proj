@@ -14,6 +14,11 @@ import {
 import type { UploadFile } from './types'
 import { debounce } from 'lodash-es'
 
+// 定义组件名称，用于 keep-alive
+defineOptions({
+  name: 'FileUpload'
+})
+
 const fileList = ref<UploadFile[]>([])
 // 预览相关
 const previewImageRefs = ref<Record<string, any>>({})

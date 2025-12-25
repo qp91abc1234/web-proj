@@ -10,6 +10,20 @@ const appStore = useAppStore()
 const route = useRoute()
 const scrollbarRef = ref()
 
+const keepAliveInclude = computed(() => {
+  const KEEP_ALIVE_CFG_LIST = [{ name: 'FileUpload', path: '/tools/file-upload' }]
+  const include: string[] = []
+
+  KEEP_ALIVE_CFG_LIST.forEach((item) => {
+    const hasTab = appStore.tabs.some((tab) => tab.path === item.path)
+    if (hasTab) {
+      include.push(item.name)
+    }
+  })
+
+  return include
+})
+
 const translateX = computed(() => {
   if (!appStore.isMobile) {
     return 0
@@ -53,7 +67,11 @@ watch(
     >
       <Header />
       <el-scrollbar ref="scrollbarRef" class="content-scrollbar" height="100%">
-        <RouterView />
+        <RouterView v-slot="{ Component, route }">
+          <KeepAlive :include="keepAliveInclude">
+            <component :is="Component" :key="route.path" />
+          </KeepAlive>
+        </RouterView>
       </el-scrollbar>
     </g-flex>
     <div
