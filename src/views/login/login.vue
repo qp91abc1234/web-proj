@@ -3,16 +3,17 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { Lock, User } from '@element-plus/icons-vue'
 import { type FormRules, type FormInstance, ElMessage } from 'element-plus'
+import { useUserStore } from '@/store/modules/userStore'
 
 const router = useRouter()
+const userStore = useUserStore()
 
 const loginFormRef = ref<FormInstance>()
 const loading = ref(false)
 
 const loginForm = reactive({
-  username: 'admin',
-  password: '123456',
-  remember: false
+  username: import.meta.env.VITE_DEFAULT_USERNAME || '',
+  password: import.meta.env.VITE_DEFAULT_PASSWORD || ''
 })
 
 const rules = reactive<FormRules>({
@@ -33,12 +34,9 @@ const handleLogin = async (formEl: FormInstance | undefined) => {
     if (valid) {
       loading.value = true
       try {
-        // 这里调用实际的登录接口
-        // await userStore.login(loginForm.username, loginForm.password)
-
-        // 模拟登录
+        await userStore.login({ username: loginForm.username, password: loginForm.password })
         ElMessage.success('登录成功')
-        router.push('/home')
+        router.replace('/home')
       } catch {
         ElMessage.error('登录失败，请检查用户名和密码')
       } finally {
@@ -112,13 +110,6 @@ const handleLogin = async (formEl: FormInstance | undefined) => {
             </el-form-item>
 
             <el-form-item>
-              <div class="form-options">
-                <el-checkbox v-model="loginForm.remember">记住密码</el-checkbox>
-                <el-link type="primary" :underline="false">忘记密码？</el-link>
-              </div>
-            </el-form-item>
-
-            <el-form-item>
               <el-button
                 type="primary"
                 :loading="loading"
@@ -127,12 +118,6 @@ const handleLogin = async (formEl: FormInstance | undefined) => {
               >
                 登录
               </el-button>
-            </el-form-item>
-
-            <el-form-item>
-              <div class="tips">
-                <el-text type="info">默认账号：admin / 123456</el-text>
-              </div>
             </el-form-item>
           </el-form>
         </el-card>
@@ -156,7 +141,7 @@ const handleLogin = async (formEl: FormInstance | undefined) => {
   width: 900px;
   min-height: 500px;
   overflow: hidden;
-  background: white;
+  background: var(--el-bg-color);
   border-radius: 16px;
   box-shadow: 0 20px 60px rgb(0 0 0 / 30%);
 }

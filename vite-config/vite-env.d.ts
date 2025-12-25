@@ -10,6 +10,10 @@ declare namespace Env {
     readonly VITE_VISUALIZER_TOOL: string
     /** API 基础 URL */
     readonly VITE_BASE_URL: string
+    /** 默认登录用户名（仅开发环境） */
+    readonly VITE_DEFAULT_USERNAME: string
+    /** 默认登录密码（仅开发环境） */
+    readonly VITE_DEFAULT_PASSWORD: string
   }
 }
 
