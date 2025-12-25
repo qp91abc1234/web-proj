@@ -3,7 +3,14 @@ import { ref, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Upload, View, Document, RefreshRight } from '@element-plus/icons-vue'
 import { uploadFiles, uploadChunk, mergeChunks } from '@/common/api/fileUpload'
-import { createFileChunks, CHUNK_SIZE, isImage, formatFileSize, generateId } from './utils'
+import {
+  createFileChunks,
+  CHUNK_SIZE,
+  BATCH_UPLOAD_SIZE,
+  isImage,
+  formatFileSize,
+  generateId
+} from './utils'
 import type { UploadFile } from './types'
 import { debounce } from 'lodash-es'
 
@@ -43,6 +50,25 @@ const handleFileChange = async (files: FileList | File[] | null) => {
   const smallFiles: File[] = []
   const uploadPromises: Promise<{ success: number; failed: number }>[] = []
 
+  /**
+   * 将小文件数组分批上传
+   * @param files 小文件数组
+   */
+  const batchUploadSmallFiles = (files: File[]) => {
+    if (files.length === 0) return
+
+    // 如果文件数量超过推荐值，分成多个批次
+    if (files.length > BATCH_UPLOAD_SIZE) {
+      for (let i = 0; i < files.length; i += BATCH_UPLOAD_SIZE) {
+        const batch = files.slice(i, i + BATCH_UPLOAD_SIZE)
+        uploadPromises.push(handleNormalUpload(batch))
+      }
+    } else {
+      // 数量在推荐值内，一次性上传
+      uploadPromises.push(handleNormalUpload(files))
+    }
+  }
+
   fileArray.forEach((file) => {
     if (file.size < CHUNK_SIZE) {
       // 小文件收集起来，等待批量上传
@@ -50,7 +76,7 @@ const handleFileChange = async (files: FileList | File[] | null) => {
     } else {
       // 遇到大文件时，先上传之前收集的小文件（如果有）
       if (smallFiles.length > 0) {
-        uploadPromises.push(handleNormalUpload(smallFiles))
+        batchUploadSmallFiles(smallFiles)
         smallFiles.length = 0 // 清空已处理的小文件
       }
       // 大文件立即处理
@@ -60,7 +86,7 @@ const handleFileChange = async (files: FileList | File[] | null) => {
 
   // 处理剩余的小文件
   if (smallFiles.length > 0) {
-    uploadPromises.push(handleNormalUpload(smallFiles))
+    batchUploadSmallFiles(smallFiles)
   }
 
   // 等待所有上传完成，统计结果

@@ -6,6 +6,12 @@ import type { FileChunk } from './types'
 export const CHUNK_SIZE = 1024 * 1024 // 1MB
 
 /**
+ * 小文件批量上传推荐值：每批最多 10 个文件
+ * 超过此数量将自动分成多个批次上传，避免单次请求过大
+ */
+export const BATCH_UPLOAD_SIZE = 10
+
+/**
  * 格式化文件大小
  * @param bytes 文件大小（字节）
  * @returns 格式化后的文件大小字符串
