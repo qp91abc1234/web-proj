@@ -4,6 +4,7 @@ import Components from 'unplugin-vue-components/vite'
 import UnoCSS from 'unocss/vite'
 import vueDevTools from 'vite-plugin-vue-devtools'
 import { visualizer } from 'rollup-plugin-visualizer'
+import legacy from '@vitejs/plugin-legacy'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import dayjs from 'dayjs'
 
@@ -74,6 +75,13 @@ export function getPlugins(viteEnv: Env.ImportMeta, isBuild: boolean): PluginOpt
   }
 
   if (isBuild) {
+    // 兼容旧版浏览器（自动读取 .browserslistrc 配置）
+    plugins.push(
+      legacy({
+        additionalLegacyPolyfills: ['regenerator-runtime/runtime']
+      })
+    )
+
     // 构建时启用图片压缩
     plugins.push(
       viteImgCompress({
