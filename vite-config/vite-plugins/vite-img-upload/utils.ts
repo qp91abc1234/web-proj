@@ -93,4 +93,3 @@ export function isMatch(
 
   return true
 }
-

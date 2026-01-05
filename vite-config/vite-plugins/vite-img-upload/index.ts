@@ -284,4 +284,3 @@ export default function viteImgUpload(options: ViteImgUploadOptions): Plugin {
     }
   }
 }
-
