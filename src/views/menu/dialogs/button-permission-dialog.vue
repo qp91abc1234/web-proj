@@ -52,6 +52,7 @@ const open = (menuId: number, data?: ButtonPermission) => {
     dialogTitle.value = '新增按钮权限'
     resetForm(menuId)
   }
+  formRef.value?.resetFields()
   dialogVisible.value = true
 }
 
@@ -87,7 +88,6 @@ const handleSave = async (formEl: FormInstance | undefined) => {
 // 取消
 const handleCancel = () => {
   dialogVisible.value = false
-  formRef.value?.resetFields()
 }
 
 // 暴露方法给父组件

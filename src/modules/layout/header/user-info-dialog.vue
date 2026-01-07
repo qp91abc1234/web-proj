@@ -39,6 +39,8 @@ const resetForm = (user: User) => {
 const open = () => {
   if (!userStore.userInfo) return
   resetForm(userStore.userInfo)
+
+  userFormRef.value?.resetFields()
   dialogVisible.value = true
 }
 
@@ -90,7 +92,6 @@ const handleSave = async (formEl: FormInstance | undefined) => {
 // 取消
 const handleCancel = () => {
   dialogVisible.value = false
-  userFormRef.value?.resetFields()
 }
 
 // 暴露方法给父组件

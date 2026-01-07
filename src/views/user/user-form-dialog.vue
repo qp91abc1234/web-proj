@@ -57,6 +57,7 @@ const open = (user?: User | null) => {
     dialogTitle.value = '新增用户'
     resetForm()
   }
+  userFormRef.value?.resetFields()
   dialogVisible.value = true
 }
 
@@ -88,7 +89,6 @@ const handleSave = async (formEl: FormInstance | undefined) => {
 // 取消
 const handleCancel = () => {
   dialogVisible.value = false
-  userFormRef.value?.resetFields()
 }
 
 // 暴露方法给父组件
