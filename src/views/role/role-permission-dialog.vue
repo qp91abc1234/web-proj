@@ -77,7 +77,9 @@ const open = async (role: Role, defaultTab: 'menu' | 'api' = 'menu') => {
 
     // 设置菜单树选中状态
     if (menuTreeRef.value) {
-      menuTreeRef.value.setCheckedKeys(permissionForm.menuIds)
+      permissionForm.menuIds.forEach((id) => {
+        menuTreeRef.value.setChecked(id, true)
+      })
     }
   } catch (error: any) {
     ElMessage.error(error.message || '加载权限失败')
