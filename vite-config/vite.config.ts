@@ -1,7 +1,6 @@
 import { join } from 'path'
 import { loadEnv, defineConfig } from 'vite'
 
-import { manualChunks } from './manual-chunks'
 import { getPlugins } from './vite-plugins'
 
 import type { ConfigEnv, UserConfig } from 'vite'
@@ -27,7 +26,11 @@ export default defineConfig((env: ConfigEnv) => {
     build: {
       rollupOptions: {
         output: {
-          manualChunks
+          manualChunks: {
+            'vue-core': ['vue', 'vue-router', 'pinia'],
+            utils: ['axios', 'dayjs'],
+            vconsole: ['vconsole']
+          }
         }
       }
     },
