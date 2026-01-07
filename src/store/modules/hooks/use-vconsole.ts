@@ -1,5 +1,3 @@
-import VConsole from 'vconsole'
-
 import { createStorageRef } from '@/common/utils/storage'
 
 /** VConsole 容器元素 ID */
@@ -12,7 +10,7 @@ const VCONSOLE_STORAGE_KEY = 'vConsole'
  * 切换 VConsole 的显示状态
  * @param isShow - 是否显示
  */
-function toggleVConsole(isShow: boolean): void {
+async function toggleVConsole(isShow: boolean): Promise<void> {
   const element = document.getElementById(VCONSOLE_ELEMENT_ID)
 
   if (isShow) {
@@ -20,8 +18,9 @@ function toggleVConsole(isShow: boolean): void {
       // 如果已存在，直接显示
       element.style.display = 'block'
     } else {
-      // 如果不存在，创建新实例（实例会自动挂载到 DOM）
+      // 如果不存在，动态导入并创建新实例（实例会自动挂载到 DOM）
       try {
+        const { default: VConsole } = await import('vconsole')
         new VConsole()
       } catch (error) {
         console.error('[VConsole] Failed to initialize:', error)
@@ -51,7 +50,7 @@ function toggleVConsole(isShow: boolean): void {
  * ```
  */
 export function useVConsole() {
-  const vConsole = createStorageRef(VCONSOLE_STORAGE_KEY, false, {
+  const vConsole = createStorageRef<boolean>(VCONSOLE_STORAGE_KEY, false, {
     onChange: toggleVConsole,
     immediate: true
   })

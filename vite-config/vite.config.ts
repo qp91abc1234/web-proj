@@ -28,8 +28,7 @@ export default defineConfig((env: ConfigEnv) => {
         output: {
           manualChunks: {
             'vue-core': ['vue', 'vue-router', 'pinia'],
-            utils: ['axios', 'dayjs'],
-            vconsole: ['vconsole']
+            utils: ['axios', 'dayjs']
           }
         }
       }
