@@ -10,6 +10,7 @@ export default defineConfig((env: ConfigEnv) => {
   const viteEnv = loadEnv(env.mode, process.cwd()) as unknown as Env.ImportMeta
 
   const userConfig: UserConfig = {
+    base: '/admin/',
     plugins: getPlugins(viteEnv, env.command === 'build'),
     resolve: {
       alias: {
