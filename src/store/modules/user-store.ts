@@ -5,6 +5,7 @@ import { createStorageRef } from '@/common/utils/storage'
 import { login as loginApi, refreshToken as refreshTokenApi } from '@/common/api/auth'
 import { getUserDetail } from '@/common/api/user'
 import type { User } from '@/common/types/user'
+import type { LoginParams } from '@/common/types/auth'
 import { useRouter } from 'vue-router'
 
 /**
@@ -19,7 +20,7 @@ import { useRouter } from 'vue-router'
  * const userStore = useUserStore()
  *
  * // 登录
- * await userStore.login({ username: 'admin', password: '123456' })
+ * await userStore.login({ username: 'admin', password: '123456', captchaId: 'xxx', captchaCode: 'abcd' })
  *
  * // 检查登录状态
  * if (userStore.isLoggedIn) {
@@ -50,10 +51,10 @@ export const useUserStore = defineStore('user', () => {
   // ==================== 认证操作 ====================
   /**
    * 用户登录
-   * @param params - 登录参数
+   * @param params - 登录参数（包含用户名、密码、验证码ID和验证码）
    * @throws 登录失败时抛出错误
    */
-  async function login(params: { username: string; password: string }): Promise<void> {
+  async function login(params: LoginParams): Promise<void> {
     const res = await loginApi(params)
     userId.value = res.userId
     token.value = res.token

@@ -1,33 +1,12 @@
-import { requestPost } from '../utils/request'
+import { requestPost, requestGet } from '../utils/request'
+import type { CaptchaResponse, LoginParams, RefreshTokenParams, AuthResponse } from '../types/auth'
 
 /**
- * 登录请求参数
+ * 获取验证码
+ * @returns 验证码响应数据
  */
-export interface LoginParams {
-  /** 用户名 */
-  username: string
-  /** 密码 */
-  password: string
-}
-
-/**
- * 刷新令牌请求参数
- */
-export interface RefreshTokenParams {
-  /** 刷新令牌 */
-  refreshToken: string
-}
-
-/**
- * 认证响应数据
- */
-export interface AuthResponse {
-  /** 用户ID */
-  userId: number
-  /** 访问令牌 */
-  token: string
-  /** 刷新令牌 */
-  refreshToken: string
+export function getCaptcha(): Promise<CaptchaResponse> {
+  return requestGet<CaptchaResponse>('/auth/captcha').then((res) => res.data)
 }
 
 /**
