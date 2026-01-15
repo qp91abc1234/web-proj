@@ -25,8 +25,10 @@ export default defineConfig((env: ConfigEnv) => {
       }
     },
     build: {
+      sourcemap: env.command === 'build' ? true : 'inline',
       rollupOptions: {
         output: {
+          sourcemapFileNames: 'sourcemaps/[name]-[hash].map',
           manualChunks: {
             'vue-core': ['vue', 'vue-router', 'pinia'],
             utils: ['axios', 'dayjs']
