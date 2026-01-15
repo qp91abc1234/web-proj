@@ -11,10 +11,10 @@
   "scss.validate": false,
   "explorer.fileNesting.enabled": true,
   "explorer.fileNesting.patterns": {
-    "package.json": "pnpm-lock.yaml,.gitignore,components.d.ts,auto-imports.d.ts,.browserslistrc",
+    "package.json": "pnpm-lock.yaml,.gitignore,components.d.ts,auto-imports.d.ts",
     ".env": ".env.*",
     "tsconfig.json": "tsconfig.*",
-    ".editorconfig": "uno.config.ts,.prettierrc,eslint.config.mjs,stylelint.config.mjs,.eslintignore,.stylelintignore"
+    ".editorconfig": "uno.config.ts,.prettierrc,eslint.config.mjs,stylelint.config.mjs,.eslintignore,.stylelintignore,.browserslistrc"
   },
   "editor.quickSuggestions": {
     "strings": "on"
