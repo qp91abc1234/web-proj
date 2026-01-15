@@ -19,7 +19,7 @@ const queue: PendingTask[] = []
  * 挂载了统一的请求/响应拦截器
  */
 export const instance: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_BASE_URL,
+  baseURL: '/api',
   timeout: 3000
 })
 
