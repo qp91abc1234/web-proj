@@ -5,6 +5,7 @@ import UnoCSS from 'unocss/vite'
 import vueDevTools from 'vite-plugin-vue-devtools'
 import { visualizer } from 'rollup-plugin-visualizer'
 import legacy from '@vitejs/plugin-legacy'
+import viteCompression from 'vite-plugin-compression'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import dayjs from 'dayjs'
 
@@ -101,6 +102,17 @@ export function getPlugins(viteEnv: Env.ImportMeta, isBuild: boolean): PluginOpt
           // return url
           return ''
         }
+      })
+    )
+
+    // 构建时启用 gzip 压缩
+    plugins.push(
+      viteCompression({
+        algorithm: 'gzip',
+        ext: '.gz',
+        threshold: 10240, // 只压缩大于 10KB 的文件
+        deleteOriginFile: false, // 保留原文件
+        verbose: false // 显示压缩信息
       })
     )
 
