@@ -326,3 +326,23 @@ export function removeCssVars(
 ): void {
   varNames.forEach((varName) => removeCssVar(varName, element))
 }
+
+/**
+ * 规范化 CSS 尺寸值
+ *
+ * - number：自动补 px（例如 12 -> "12px"）
+ * - string：纯数字字符串自动补 px（例如 "12" -> "12px"），其它原样透传（例如 "100%"、"2rem"、"auto"、"calc(...)"）
+ * - undefined/null/空字符串：返回 undefined（表示不设置该样式）
+ */
+export function normalizeCssSize(v?: number | string | null): string | undefined {
+  if (v === undefined || v === null) return undefined
+  if (typeof v === 'number') return `${v}px`
+
+  const s = v.trim()
+  if (!s) return undefined
+
+  // 兼容传 "200" 这种纯数字字符串：默认按 px 处理
+  if (/^\d+(\.\d+)?$/.test(s)) return `${s}px`
+
+  return s
+}

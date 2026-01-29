@@ -5,10 +5,6 @@ import isYesterday from 'dayjs/plugin/isYesterday'
 dayjs.extend(isToday)
 dayjs.extend(isYesterday)
 
-export function getImageUrl(name) {
-  return new URL(`../../assets/${name}`, import.meta.url).href
-}
-
 export function formatDateTime(
   datetime: string | number | Date | undefined = undefined,
   opts: {
