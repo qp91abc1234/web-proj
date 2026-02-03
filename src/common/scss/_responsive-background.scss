@@ -1,0 +1,114 @@
+/**
+ * 响应式背景图片 SCSS Mixin
+ *
+ * 用于装饰性背景图的响应式加载（background-image）。
+ *
+ * 注意：
+ * - CSS 本身无法可靠检测 “是否支持某图片格式”（@supports 对 webp/avif 不生效）
+ * - 常见做法是：JS 探测后给 html/body 加 class（如 .webp / .avif），再由 CSS 覆盖背景图格式
+ */
+@use 'sass:map';
+
+// ============================================
+// 全局 CDN 基础路径
+// ============================================
+$global-cdn-base: '' !default;
+
+// ============================================
+// 全局图片格式映射
+// ============================================
+$global-image-formats: (
+  // 输出顺序很重要：让 avif 在 webp 之后，从而在两者同时存在时 avif 覆盖 webp
+  primary: ('webp', 'avif'),
+  fallback: 'jpg'
+) !default;
+
+// ============================================
+// 全局图片断点映射
+// ============================================
+$global-image-breakpoints: (
+  0: 400,
+  768px: 800,
+  1200px: 1200,
+  1920px: 1600
+) !default;
+
+// ============================================
+// 全局图片 Retina 映射
+// ============================================
+$global-image-retinas: (
+  1: '',
+  2: '@2x',
+  // 3: '@3x',
+) !default;
+
+// ============================================
+// 核心 Mixin
+// ============================================
+
+@mixin bg-url($base-url, $cdn-base, $format, $width, $retina-suffix) {
+  // $base-url 通常以 "/" 开头（如 "/images/hero"），这里直接拼接避免出现多余路径段
+  $full-base: if($cdn-base != '', '#{$cdn-base}#{$base-url}', $base-url);
+  $w: if($width != null, '-#{$width}w', '');
+
+  background-image: url('#{$full-base}#{$w}#{$retina-suffix}.#{$format}');
+}
+
+/**
+ * 完整版：响应式背景图片
+ *
+ * @param {String} $base-url - 图片基础路径，如 '/images/banner'
+ * @param {Map} $breakpoints - 断点映射，默认使用全局配置
+ * @param {String} $cdn-base - CDN 基础路径，默认使用全局配置
+ * @param {Boolean} $with-styles - 是否添加 background-size 等样式，默认 true
+ * @param {String} $fallback - 降级格式（默认 jpg）
+ * @param {List} $formats - 支持的高级格式（默认 webp/avif，通过 .webp/.avif class 覆盖）
+ * @param {Boolean} $retina2x - 是否输出 2x 覆盖（默认 false）
+ * @param {String} $retina-suffix - 2x 文件名后缀（默认 '@2x'，会插在扩展名前）
+ *
+ * @example
+ *   .hero {
+ *     // 需要准备：
+ *     // hero-400w.jpg / hero-800w.jpg / hero-1200w.jpg ...
+ *     // 以及可选的 webp/avif 同名变体（由 .webp/.avif class 覆盖）
+ *     @include responsive-bg('/images/hero');
+ *   }
+ */
+@mixin responsive-bg(
+  $base-url,
+  $cdn-base: $global-cdn-base,
+  $formats: map.get($global-image-formats, primary),
+  $fallback: map.get($global-image-formats, fallback),
+  $breakpoints: $global-image-breakpoints,
+  $retinas: $global-image-retinas
+) {
+  // 1) fallback 格式：断点 × dpr 双循环
+  @each $bp, $w in $breakpoints {
+    @each $dpr, $suffix in $retinas {
+      @media (width >= $bp) {
+        @media (resolution >= #{$dpr}dppx) {
+          @include bg-url($base-url, $cdn-base, $fallback, $w, $suffix);
+        }
+      }
+    }
+  }
+
+  // 2) 高级格式：格式 × 断点 × dpr 三循环
+  @each $fmt in $formats {
+    .#{$fmt} & {
+      @each $bp, $w in $breakpoints {
+        @each $dpr, $suffix in $retinas {
+          @media (width >= $bp) {
+            @media (resolution >= #{$dpr}dppx) {
+              @include bg-url($base-url, $cdn-base, $fmt, $w, $suffix);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+}
