@@ -6,8 +6,11 @@
  * 注意：
  * - CSS 本身无法可靠检测 “是否支持某图片格式”（@supports 对 webp/avif 不生效）
  * - 常见做法是：JS 探测后给 html/body 加 class（如 .webp / .avif），再由 CSS 覆盖背景图格式
+ * - $base-url 必须传入完整路径（包含扩展名），以便 vite 正确捕获图片资源
+ *   例如：'@/assets/img/hero.jpg'
+ *   传入路径的扩展名会被自动提取作为 fallback 格式，然后替换为对应格式（webp/avif等）
  */
-@use 'sass:map';
+@use 'sass:string';
 
 // ============================================
 // 全局 CDN 基础路径
@@ -15,13 +18,10 @@
 $global-cdn-base: '' !default;
 
 // ============================================
-// 全局图片格式映射
+// 全局高级图片格式
 // ============================================
-$global-image-formats: (
-  // 输出顺序很重要：让 avif 在 webp 之后，从而在两者同时存在时 avif 覆盖 webp
-  primary: ('webp', 'avif'),
-  fallback: 'jpg'
-) !default;
+// 输出顺序很重要：让 avif 在 webp 之后，从而在两者同时存在时 avif 覆盖 webp
+$global-image-formats: ('webp', 'avif') !default;
 
 // ============================================
 // 全局图片断点映射
@@ -46,9 +46,44 @@ $global-image-retinas: (
 // 核心 Mixin
 // ============================================
 
-@mixin bg-url($base-url, $cdn-base, $format, $width, $retina-suffix) {
-  // $base-url 通常以 "/" 开头（如 "/images/hero"），这里直接拼接避免出现多余路径段
-  $full-base: if($cdn-base != '', '#{$cdn-base}#{$base-url}', $base-url);
+// 辅助函数：查找最后一个点的位置
+@function last-dot-index($path) {
+  $index: null;
+
+  @for $i from 1 through string.length($path) {
+    @if string.slice($path, $i, $i) == '.' {
+      $index: $i;
+    }
+  }
+
+  @return $index;
+}
+
+// 辅助函数：提取文件扩展名
+// 例如：'/src/assets/img/hero.jpg' -> 'jpg'
+@function extract-ext($path) {
+  $dot-index: last-dot-index($path);
+
+  @if $dot-index {
+    @return string.slice($path, $dot-index + 1);
+  }
+
+  @return null;
+}
+
+// 辅助函数：移除文件扩展名
+// 例如：'/src/assets/img/hero.jpg' -> '/src/assets/img/hero'
+@function remove-ext($path) {
+  $dot-index: last-dot-index($path);
+
+  @if $dot-index {
+    @return string.slice($path, 1, $dot-index - 1);
+  }
+
+  @return $path;
+}
+
+@mixin bg-url($full-base, $format, $width, $retina-suffix) {
   $w: if($width != null, '-#{$width}w', '');
 
   background-image: url('#{$full-base}#{$w}#{$retina-suffix}.#{$format}');
@@ -57,37 +92,30 @@ $global-image-retinas: (
 /**
  * 完整版：响应式背景图片
  *
- * @param {String} $base-url - 图片基础路径，如 '/images/banner'
- * @param {Map} $breakpoints - 断点映射，默认使用全局配置
+ * @param {String} $base-url - 图片完整路径（必须包含扩展名），如 '@/assets/img/banner.jpg'
+ *                              扩展名会被自动提取作为 fallback 格式，然后替换为相应格式，以便 vite 正确捕获和处理图片资源
  * @param {String} $cdn-base - CDN 基础路径，默认使用全局配置
- * @param {Boolean} $with-styles - 是否添加 background-size 等样式，默认 true
- * @param {String} $fallback - 降级格式（默认 jpg）
  * @param {List} $formats - 支持的高级格式（默认 webp/avif，通过 .webp/.avif class 覆盖）
- * @param {Boolean} $retina2x - 是否输出 2x 覆盖（默认 false）
- * @param {String} $retina-suffix - 2x 文件名后缀（默认 '@2x'，会插在扩展名前）
- *
- * @example
- *   .hero {
- *     // 需要准备：
- *     // hero-400w.jpg / hero-800w.jpg / hero-1200w.jpg ...
- *     // 以及可选的 webp/avif 同名变体（由 .webp/.avif class 覆盖）
- *     @include responsive-bg('/images/hero');
- *   }
+ * @param {Map} $breakpoints - 断点映射，默认使用全局配置
+ * @param {Map} $retinas - Retina 映射，默认使用全局配置
  */
 @mixin responsive-bg(
   $base-url,
   $cdn-base: $global-cdn-base,
-  $formats: map.get($global-image-formats, primary),
-  $fallback: map.get($global-image-formats, fallback),
+  $formats: $global-image-formats,
   $breakpoints: $global-image-breakpoints,
   $retinas: $global-image-retinas
 ) {
+  $fallback-format: extract-ext($base-url);
+  $base-path: remove-ext($base-url);
+  $full-base: if($cdn-base != '', '#{$cdn-base}#{$base-path}', $base-path);
+
   // 1) fallback 格式：断点 × dpr 双循环
   @each $bp, $w in $breakpoints {
     @each $dpr, $suffix in $retinas {
       @media (width >= $bp) {
         @media (resolution >= #{$dpr}dppx) {
-          @include bg-url($base-url, $cdn-base, $fallback, $w, $suffix);
+          @include bg-url($full-base, $fallback-format, $w, $suffix);
         }
       }
     }
@@ -100,7 +128,7 @@ $global-image-retinas: (
         @each $dpr, $suffix in $retinas {
           @media (width >= $bp) {
             @media (resolution >= #{$dpr}dppx) {
-              @include bg-url($base-url, $cdn-base, $fmt, $w, $suffix);
+              @include bg-url($full-base, $fmt, $w, $suffix);
             }
           }
         }
