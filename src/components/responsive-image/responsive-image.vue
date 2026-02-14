@@ -3,7 +3,7 @@
  * ResponsiveImage - 响应式图片组件
  *
  * 功能：
- * - 自动生成多种格式（AVIF/WebP/JPG）
+ * - 自动生成多种格式（AVIF/WebP/PNG）
  * - 自动生成多种尺寸（响应式）
  * - 支持懒加载
  * - 支持 CDN 路径
@@ -20,16 +20,11 @@
  *   sizes="(max-width: 600px) 200px, 400px"
  * />
  *
- * 3. 禁用某些格式（仅用降级格式）
- * <responsive-image src="/images/photo.png" :formats="['avif', 'webp']" />
- *
- * 4. 关键图片（不懒加载）
- * <responsive-image src="/images/hero.png" :lazy="false" />
+ * 3. 指定高级格式与 Retina 倍率
+ * <responsive-image src="/images/photo.png" :formats="['avif', 'webp']" :retinas="[1, 2, 3]" />
  */
-import { computed, useAttrs } from 'vue'
+import { computed, type CSSProperties } from 'vue'
 import { useResponseImage } from './use-response-image'
-
-const attrs = useAttrs()
 
 const { getParam } = useResponseImage()
 const getImageUrl = getParam('getImageUrl') || ((src: string) => src)
@@ -50,6 +45,8 @@ const props = withDefaults(
     sizes?: string
     /** 是否懒加载 */
     lazy?: boolean
+    /** 图片样式 */
+    imgStyle?: CSSProperties
   }>(),
   {
     cdnBase: '',
@@ -57,11 +54,10 @@ const props = withDefaults(
     widths: undefined,
     retinas: undefined,
     sizes: undefined,
-    lazy: true
+    lazy: true,
+    imgStyle: () => ({})
   }
 )
-
-defineOptions({ inheritAttrs: false })
 
 const emit = defineEmits<{
   load: [Event]
@@ -200,7 +196,7 @@ const handleError = (e: Event) => {
 </script>
 
 <template>
-  <picture class="responsive-image">
+  <picture>
     <!-- 不同格式的 source，降级格式由 src 后缀决定，放在 img 中 -->
     <source
       v-for="format in parsedFormats.filter((f) => f !== parsedSrc.fallbackFormat)"
@@ -212,7 +208,12 @@ const handleError = (e: Event) => {
 
     <!-- 降级方案 -->
     <img
-      v-bind="attrs"
+      :style="{
+        width: '100%',
+        height: '100%',
+        objectPosition: 'center',
+        ...imgStyle
+      }"
       :src="fallbackSrc"
       :srcset="generateSrcset(parsedSrc.fallbackFormat)"
       :sizes="parsedSizes"

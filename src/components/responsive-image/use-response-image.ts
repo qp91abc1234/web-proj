@@ -13,6 +13,9 @@ interface ResponseImageContext {
 
 export const useResponseImage = () => {
   const setupResponseImage = (params: ResponseImageContext = {}) => {
+    if (import.meta.env.DEV) {
+      return
+    }
     provide<ResponseImageContext>(keyResponseImage, params)
   }
 
