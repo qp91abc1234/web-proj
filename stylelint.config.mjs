@@ -12,6 +12,26 @@ export default {
     }
   ],
   rules: {
+    'at-rule-no-unknown': [
+      true,
+      {
+        ignoreAtRules: [
+          'use',
+          'forward',
+          'mixin',
+          'include',
+          'extend',
+          'if',
+          'else',
+          'for',
+          'each',
+          'while',
+          'function',
+          'return',
+          'content'
+        ]
+      }
+    ],
     'no-empty-source': null
   }
 }

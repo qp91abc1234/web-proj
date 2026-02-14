@@ -4,6 +4,7 @@ import App from './App.vue'
 import { setupPinia } from '@/store/index.ts'
 import { setupRouter } from '@/router/index.ts'
 import { setupErrorHandling } from '@/common/utils/setup-error-handling'
+import { applyImageFormatClasses } from '@/common/utils/image-format-support'
 import { setupGlobalComponents } from './components'
 import { setupGlobalModules } from './modules'
 
@@ -30,5 +31,8 @@ setupGlobalModules(app)
 
 // 安装全局异常处理
 setupErrorHandling(app)
+
+// 应用图片格式支持
+applyImageFormatClasses()
 
 app.mount('#app')

@@ -100,7 +100,7 @@ watch(
 
 .sider-shader {
   position: absolute;
-  z-index: mixin.$z-index-low;
+  z-index: $z-index-low;
   width: 100%;
   height: 100%;
   background-color: var(--el-overlay-color-lighter);
@@ -109,7 +109,7 @@ watch(
 
 .sider {
   position: absolute;
-  z-index: mixin.$z-index-low;
+  z-index: $z-index-low;
   transition: transform 0.3s ease-in-out;
 }
 </style>

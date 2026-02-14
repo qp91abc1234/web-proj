@@ -20,7 +20,7 @@ export default defineConfig((env: ConfigEnv) => {
     css: {
       preprocessorOptions: {
         scss: {
-          additionalData: `@use '@/common/scss/mixin.scss';`
+          additionalData: `@use '@/common/scss/mixin.scss' as *;`
         }
       }
     },

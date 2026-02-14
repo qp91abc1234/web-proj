@@ -2,6 +2,8 @@
  * 响应式背景图片 SCSS Mixin
  *
  * 用于装饰性背景图的响应式加载（background-image）。
+ * 业务与 responsive-image 组件对齐：断点宽度、格式顺序、scale 计算（width/maxWidth）
+ * 与 App.vue 的 getImageUrl(src, format, scale) 共用同一套 OSS 参数（format + resize,p_*）。
  *
  * 注意：
  * - CSS 本身无法可靠检测 “是否支持某图片格式”（@supports 对 webp/avif 不生效）
@@ -11,6 +13,10 @@
  *   传入路径的扩展名会被自动提取作为 fallback 格式，然后替换为对应格式（webp/avif等）
  */
 @use 'sass:string';
+@use 'sass:meta';
+@use 'sass:map';
+@use 'sass:math';
+@use 'sass:list';
 
 // ============================================
 // 全局 CDN 基础路径
@@ -21,30 +27,29 @@ $global-cdn-base: '' !default;
 // 全局高级图片格式
 // ============================================
 // 输出顺序很重要：让 avif 在 webp 之后，从而在两者同时存在时 avif 覆盖 webp
-$global-image-formats: ('webp', 'avif') !default;
+$global-image-formats: () !default;
 
 // ============================================
-// 全局图片断点映射
+// 全局图片断点映射（与 responsive-image 的 widths 语义一致，用于 scale = width/maxWidth）
 // ============================================
-$global-image-breakpoints: (
-  0: 400,
-  768px: 800,
-  1200px: 1200,
-  1920px: 1600
-) !default;
+$global-image-breakpoints: () !default;
 
 // ============================================
-// 全局图片 Retina 映射
+// 全局图片 Retina 映射（与 App.vue setupResponseImage retinas [1, 2] 对应）
 // ============================================
-$global-image-retinas: (
-  1: '',
-  2: '@2x',
-  // 3: '@3x',
-) !default;
+$global-image-retinas: () !default;
 
 // ============================================
-// 核心 Mixin
+// URL 构建函数（可选，通过 @use ... with ($url-builder: meta.get-function('你的函数名')) 注入）
+// 签名须为 (src, format, scale)，与 responsive-image 的 getImageUrl(src, format, scale) 一致
 // ============================================
+$url-builder: null !default;
+
+// 默认 URL 构建函数；可被 $url-builder 覆盖（在入口通过 @use ... with 注入）
+@function default-bg-url($src, $format, $scale) {
+  // 简单返回原始路径，不做任何处理
+  @return $src;
+}
 
 // 辅助函数：查找最后一个点的位置
 @function last-dot-index($path) {
@@ -71,23 +76,112 @@ $global-image-retinas: (
   @return null;
 }
 
-// 辅助函数：移除文件扩展名
-// 例如：'/src/assets/img/hero.jpg' -> '/src/assets/img/hero'
-@function remove-ext($path) {
-  $dot-index: last-dot-index($path);
-
-  @if $dot-index {
-    @return string.slice($path, 1, $dot-index - 1);
+// 计算 breakpoints 中的最大宽度值（用于 scale 归一化）
+@function max-breakpoint-width($breakpoints) {
+  @if list.length(map.keys($breakpoints)) == 0 {
+    @return 1;
   }
 
-  @return $path;
+  $max-w: 0;
+
+  @each $bp, $w in $breakpoints {
+    @if $w > $max-w {
+      $max-w: $w;
+    }
+  }
+
+  @if $max-w <= 0 {
+    @return 1;
+  }
+
+  @return $max-w;
 }
 
-@mixin bg-url($full-base, $format, $width, $retina-suffix) {
-  $w: if($width != null, '-#{$width}w', '');
+// 计算 retinas 中的最大 dpr（用于 scale 归一化）
+@function max-retina-dpr($retinas) {
+  @if list.length(map.keys($retinas)) == 0 {
+    @return 1;
+  }
 
-  background-image: url('#{$full-base}#{$w}#{$retina-suffix}.#{$format}');
+  $max-dpr: 0;
+
+  @each $dpr, $suffix in $retinas {
+    @if $dpr > $max-dpr {
+      $max-dpr: $dpr;
+    }
+  }
+
+  @if $max-dpr <= 0 {
+    @return 1;
+  }
+
+  @return $max-dpr;
 }
+
+// 构建完整的 src 路径（与 responsive-image 组件逻辑对齐）
+@function build-src($base-url, $cdn-base) {
+  // 判断是否为 HTTP/HTTPS URL
+  $is-http: string.index($base-url, 'http://') == 1 or string.index($base-url, 'https://') == 1;
+
+  @if $is-http {
+    // 如果已经是完整的 HTTP URL，直接使用
+    @return $base-url;
+  } @else if $cdn-base != '' {
+    // 如果不是 HTTP URL 且有 CDN base，则拼接 CDN base
+    @return '#{$cdn-base}#{$base-url}';
+  } @else {
+    // 否则直接使用原路径
+    @return $base-url;
+  }
+}
+
+// 生成指定格式的响应式背景图规则（fallback 或 webp/avif 等）
+@mixin emit-responsive-bg($src, $format, $build-url, $breakpoints, $retinas, $max-w, $max-dpr) {
+  $has-breakpoints: list.length(map.keys($breakpoints)) > 0;
+  $has-retinas: list.length(map.keys($retinas)) > 0;
+
+  @if $has-breakpoints and $has-retinas {
+    // breakpoints + retinas：断点 × dpr 双循环
+    $max-width: $max-w * $max-dpr;
+
+    @each $bp, $w in $breakpoints {
+      @each $dpr, $suffix in $retinas {
+        @media (width >= $bp) {
+          @media (resolution >= #{$dpr}dppx) {
+            $scale: math.div($w * $dpr, $max-width);
+
+            background-image: url(#{meta.call($build-url, $src, $format, $scale)});
+          }
+        }
+      }
+    }
+  } @else if $has-breakpoints {
+    // 只有 breakpoints：scale = width / maxWidth
+    @each $bp, $w in $breakpoints {
+      @media (width >= $bp) {
+        $scale: math.div($w, $max-w);
+
+        background-image: url(#{meta.call($build-url, $src, $format, $scale)});
+      }
+    }
+  } @else if $has-retinas {
+    // 只有 retinas：scale = dpr / maxDpr
+    @each $dpr, $suffix in $retinas {
+      @media (resolution >= #{$dpr}dppx) {
+        $scale: math.div($dpr, $max-dpr);
+
+        background-image: url(#{meta.call($build-url, $src, $format, $scale)});
+      }
+    }
+  } @else {
+    // 都没有：scale = 1
+    background-image: url(#{meta.call($build-url, $src, $format, 1)});
+  }
+}
+
+// ============================================
+// 核心 Mixin
+// ============================================
 
 /**
  * 完整版：响应式背景图片
@@ -107,32 +201,26 @@ $global-image-retinas: (
   $retinas: $global-image-retinas
 ) {
   $fallback-format: extract-ext($base-url);
-  $base-path: remove-ext($base-url);
-  $full-base: if($cdn-base != '', '#{$cdn-base}#{$base-path}', $base-path);
+  $src: build-src($base-url, $cdn-base);
 
-  // 1) fallback 格式：断点 × dpr 双循环
-  @each $bp, $w in $breakpoints {
-    @each $dpr, $suffix in $retinas {
-      @media (width >= $bp) {
-        @media (resolution >= #{$dpr}dppx) {
-          @include bg-url($full-base, $fallback-format, $w, $suffix);
-        }
-      }
-    }
+  // 获取 URL 构建函数：默认使用 default-bg-url，若外部通过 with 注入则覆盖
+  $build-url: meta.get-function('default-bg-url');
+
+  @if $url-builder {
+    $build-url: $url-builder;
   }
 
-  // 2) 高级格式：格式 × 断点 × dpr 三循环
+  // 对齐 responsive-image：maxWidth = max(widths) * max(retinas)
+  $max-w: max-breakpoint-width($breakpoints);
+  $max-dpr: max-retina-dpr($retinas);
+
+  // 生成 fallback 格式背景图
+  @include emit-responsive-bg($src, $fallback-format, $build-url, $breakpoints, $retinas, $max-w, $max-dpr);
+
+  // 生成高级格式背景图（通过 .webp / .avif class 覆盖）
   @each $fmt in $formats {
     .#{$fmt} & {
-      @each $bp, $w in $breakpoints {
-        @each $dpr, $suffix in $retinas {
-          @media (width >= $bp) {
-            @media (resolution >= #{$dpr}dppx) {
-              @include bg-url($full-base, $fmt, $w, $suffix);
-            }
-          }
-        }
-      }
+      @include emit-responsive-bg($src, $fmt, $build-url, $breakpoints, $retinas, $max-w, $max-dpr);
     }
   }
 
