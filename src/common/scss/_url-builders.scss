@@ -1,5 +1,0 @@
-@use 'sass:math';
-
-@function oss-bg-url($src, $format, $scale) {
-  @return '#{$src}?x-oss-process=image/format,#{$format}/resize,p_#{math.round($scale * 100)}';
-}
