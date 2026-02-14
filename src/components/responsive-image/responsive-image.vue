@@ -32,10 +32,11 @@ import { useResponseImage } from './use-response-image'
 const attrs = useAttrs()
 
 const { getParam } = useResponseImage()
+const getImageUrl = getParam('getImageUrl') || ((src: string) => src)
 
 const props = withDefaults(
   defineProps<{
-    /** 图片路径（需带后缀，后缀为降级格式，如 .png；解析后前半部分为 baseSrc） */
+    /** 图片路径 */
     src: string
     /** CDN 基础路径 */
     cdnBase?: string
@@ -43,6 +44,8 @@ const props = withDefaults(
     formats?: string[]
     /** 图片宽度断点 */
     widths?: number[]
+    /** 像素密度倍数，用于和 widths 组合生成最终断点 */
+    retinas?: number[]
     /** sizes 属性 */
     sizes?: string
     /** 是否懒加载 */
@@ -52,6 +55,7 @@ const props = withDefaults(
     cdnBase: '',
     formats: undefined,
     widths: undefined,
+    retinas: undefined,
     sizes: undefined,
     lazy: true
   }
@@ -64,48 +68,77 @@ const emit = defineEmits<{
   error: [Error]
 }>()
 
-/**
- * 解析 src：带后缀的路径 → { baseSrc, fallbackFormat }
- * 后缀为降级格式（如 .png），前面内容为 baseSrc，用于拼接多格式/多尺寸 URL
- */
 const parsedSrc = computed(() => {
-  const src = props.src
-  if (!src) {
-    return { baseSrc: '', fallbackFormat: 'png' }
-  }
-  const pathOnly = src.split('?')[0]
-  const lastDot = pathOnly.lastIndexOf('.')
-  if (lastDot === -1) {
-    return { baseSrc: src, fallbackFormat: 'png' }
-  }
-  const baseSrc = pathOnly.slice(0, lastDot)
-  const fallbackFormat = pathOnly.slice(lastDot + 1).toLowerCase()
-  return { baseSrc, fallbackFormat }
-})
+  const cdnBase = props.cdnBase || getParam('cdnBase') || ''
+  let src = props.src
+  let fallbackFormat = 'png'
 
-/**
- * 获取降级方案的图片地址（使用最小宽度的 fallback 格式）
- */
-const fallbackSrc = computed(() => {
-  const { baseSrc, fallbackFormat } = parsedSrc.value
-  if (props.widths && props.widths.length > 0) {
-    const minWidth = Math.min(...props.widths)
-    return getImageUrl(baseSrc, fallbackFormat, minWidth)
+  if (src) {
+    src = src.split('?')[0]
+    if (!src.startsWith('http://') && !src.startsWith('https://')) {
+      src = cdnBase ? `${cdnBase}${src}` : src
+    }
+    const lastDot = src.lastIndexOf('.')
+    if (lastDot !== -1) {
+      fallbackFormat = src.slice(lastDot + 1).toLowerCase()
+    }
   }
-  return getImageUrl(baseSrc, fallbackFormat)
-})
 
-const parsedCdnBase = computed(() => {
-  return props.cdnBase || getParam('cdnBase')
+  return {
+    src,
+    fallbackFormat
+  }
 })
 
 const parsedFormats = computed(() => {
-  return props.formats || getParam('formats')
+  return props.formats || getParam('formats') || []
 })
 
-/**
- * 获取 MIME 类型
- */
+const parsedWidths = computed(() => {
+  return props.widths || getParam('widths') || []
+})
+
+const parsedRetinas = computed(() => {
+  return props.retinas || getParam('retinas') || []
+})
+
+const parsedSizes = computed(() => {
+  return props.sizes || getParam('sizes') || undefined
+})
+
+const fallbackSrc = computed(() => {
+  const { src, fallbackFormat } = parsedSrc.value
+  const widths = parsedWidths.value
+  const retinas = parsedRetinas.value
+
+  if (widths.length <= 0 && retinas.length > 0) {
+    const minRetina = Math.min(...retinas)
+    const maxRetina = Math.max(...retinas)
+    const scale = minRetina / maxRetina
+    return getImageUrl(src, fallbackFormat, scale)
+  }
+
+  const allWidths = new Set<number>()
+  widths.forEach((width) => {
+    if (retinas.length > 0) {
+      retinas.forEach((retina) => {
+        allWidths.add(width * retina)
+      })
+    } else {
+      allWidths.add(width)
+    }
+  })
+
+  if (allWidths.size > 0) {
+    const minWidth = Math.min(...Array.from(allWidths))
+    const maxWidth = Math.max(...Array.from(allWidths))
+    const scale = minWidth / maxWidth
+    return getImageUrl(src, fallbackFormat, scale)
+  }
+
+  return getImageUrl(src, fallbackFormat, 1)
+})
+
 const getMimeType = (format: string): string => {
   const mimeTypes: Record<string, string> = {
     avif: 'image/avif',
@@ -117,32 +150,37 @@ const getMimeType = (format: string): string => {
   return mimeTypes[format] || `image/${format}`
 }
 
-/**
- * 生成完整的图片路径
- */
-const getImageUrl = (baseSrc: string, format: string, width?: number): string => {
-  const widthSuffix = width ? `-${width}w` : ''
-
-  // 如果是完整的 URL，直接使用
-  if (baseSrc.startsWith('http://') || baseSrc.startsWith('https://')) {
-    return `${baseSrc}${widthSuffix}.${format}`
-  }
-
-  const fullBase = parsedCdnBase.value ? `${parsedCdnBase.value}${baseSrc}` : baseSrc
-  return `${fullBase}${widthSuffix}.${format}`
-}
-
-/**
- * 生成 srcset 字符串
- */
 const generateSrcset = (format: string): string => {
-  const { baseSrc } = parsedSrc.value
-  if (props.widths && props.widths.length > 0) {
-    return props.widths
-      .map((width) => `${getImageUrl(baseSrc, format, width)} ${width}w`)
+  const { src } = parsedSrc.value
+  const widths = parsedWidths.value
+  const retinas = parsedRetinas.value
+
+  if (widths.length <= 0 && retinas.length > 0) {
+    const maxRetina = Math.max(...parsedRetinas.value)
+    return retinas
+      .map((retina) => `${getImageUrl(src, format, retina / maxRetina)} ${retina}x`)
       .join(', ')
   }
-  return `${getImageUrl(baseSrc, format)}`
+
+  const allWidths = new Set<number>()
+  widths.forEach((width) => {
+    if (retinas.length > 0) {
+      retinas.forEach((retina) => {
+        allWidths.add(width * retina)
+      })
+    } else {
+      allWidths.add(width)
+    }
+  })
+
+  if (allWidths.size > 0) {
+    const maxWidth = Math.max(...Array.from(allWidths))
+    return Array.from(allWidths)
+      .map((width) => `${getImageUrl(src, format, width / maxWidth)} ${width}w`)
+      .join(', ')
+  }
+
+  return getImageUrl(src, format, 1)
 }
 
 const handleLoad = (e: Event) => {
@@ -169,7 +207,7 @@ const handleError = (e: Event) => {
       :key="format"
       :type="getMimeType(format)"
       :srcset="generateSrcset(format)"
-      :sizes="sizes"
+      :sizes="parsedSizes"
     />
 
     <!-- 降级方案 -->
@@ -177,7 +215,7 @@ const handleError = (e: Event) => {
       v-bind="attrs"
       :src="fallbackSrc"
       :srcset="generateSrcset(parsedSrc.fallbackFormat)"
-      :sizes="sizes"
+      :sizes="parsedSizes"
       :loading="lazy ? 'lazy' : 'eager'"
       @load="handleLoad"
       @error="handleError"

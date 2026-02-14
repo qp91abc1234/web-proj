@@ -3,23 +3,21 @@ import { inject, provide } from 'vue'
 const keyResponseImage = Symbol('responseImage')
 
 interface ResponseImageContext {
-  cdnBase: string
-  formats: string[]
+  cdnBase?: string
+  formats?: string[]
+  widths?: number[]
+  retinas?: number[]
+  sizes?: string
+  getImageUrl?: (src: string, format: string, scale: number) => string
 }
 
 export const useResponseImage = () => {
-  const setupResponseImage = (params: ResponseImageContext = { cdnBase: '', formats: [] }) => {
-    provide<ResponseImageContext>(keyResponseImage, {
-      cdnBase: params.cdnBase,
-      formats: params.formats
-    })
+  const setupResponseImage = (params: ResponseImageContext = {}) => {
+    provide<ResponseImageContext>(keyResponseImage, params)
   }
 
   const getParam = (key: string) => {
-    const responseImage = inject<ResponseImageContext>(keyResponseImage, {
-      cdnBase: '',
-      formats: []
-    })
+    const responseImage = inject<ResponseImageContext>(keyResponseImage, {})
     return responseImage[key]
   }
 

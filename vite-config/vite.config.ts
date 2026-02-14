@@ -25,6 +25,7 @@ export default defineConfig((env: ConfigEnv) => {
       }
     },
     build: {
+      outDir: 'dist/admin',
       sourcemap: env.command === 'build' ? true : 'inline',
       rollupOptions: {
         output: {
