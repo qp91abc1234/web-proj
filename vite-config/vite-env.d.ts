@@ -12,8 +12,11 @@ declare namespace Env {
     readonly VITE_DEFAULT_USERNAME: string
     /** 默认登录密码（仅开发环境） */
     readonly VITE_DEFAULT_PASSWORD: string
-    /** CDN 基础路径 */
-    readonly VITE_CDN_BASE: string
+    /** OSS 配置 */
+    readonly VITE_OSS_REGION: string
+    readonly VITE_OSS_BUCKET: string
+    readonly VITE_OSS_ACCESS_KEY_ID: string
+    readonly VITE_OSS_ACCESS_KEY_SECRET: string
   }
 }
 

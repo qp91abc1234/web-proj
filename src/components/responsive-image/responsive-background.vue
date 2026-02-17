@@ -27,6 +27,8 @@ withDefaults(
   defineProps<{
     /** 图片路径（与 ResponsiveImage 一致） */
     src: string
+    /** 是否禁用 */
+    disabled?: boolean
     /** CDN 基础路径 */
     cdnBase?: string
     /** 图片格式列表 */
@@ -37,6 +39,8 @@ withDefaults(
     retinas?: number[]
     /** sizes 属性 */
     sizes?: string
+    /** 获取图片 URL 的函数 */
+    getImageUrl?: (src: string, format: string, scale: number) => string
     /** 是否懒加载 */
     lazy?: boolean
     /** 背景样式 */
@@ -54,11 +58,13 @@ withDefaults(
       class="responsive-background-image"
       :img-style="bgStyle"
       :src="src"
+      :disabled="disabled"
       :cdn-base="cdnBase"
       :formats="formats"
       :widths="widths"
       :retinas="retinas"
       :sizes="sizes"
+      :get-image-url="getImageUrl"
       :lazy="lazy"
     />
 

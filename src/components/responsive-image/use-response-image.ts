@@ -3,6 +3,7 @@ import { inject, provide } from 'vue'
 const keyResponseImage = Symbol('responseImage')
 
 interface ResponseImageContext {
+  disabled?: boolean
   cdnBase?: string
   formats?: string[]
   widths?: number[]
@@ -13,9 +14,6 @@ interface ResponseImageContext {
 
 export const useResponseImage = () => {
   const setupResponseImage = (params: ResponseImageContext = {}) => {
-    if (import.meta.env.DEV) {
-      return
-    }
     provide<ResponseImageContext>(keyResponseImage, params)
   }
 

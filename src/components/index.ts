@@ -9,11 +9,13 @@ import type { App } from 'vue'
 export const setupGlobalComponents = (app: App<Element>) => {
   const { setupResponseImage } = useResponseImage()
   setupResponseImage({
-    cdnBase: import.meta.env.VITE_CDN_BASE,
+    disabled: !!import.meta.env.DEV,
     formats: ['avif', 'webp'],
-    retinas: [1, 2, 3]
+    retinas: [1, 2, 3],
+    getImageUrl: (src: string, format: string, scale: number) => {
+      return `${src}?x-oss-process=image/format,${format}/resize,p_${Math.round(scale * 100)}`
+    }
   })
-  console.log('setupResponseImage', import.meta.env.VITE_CDN_BASE)
 
   app.component('GFlex', GFlex)
   app.component('NinePatchImage', NinePatchImage)

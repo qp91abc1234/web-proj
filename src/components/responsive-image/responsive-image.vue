@@ -27,12 +27,13 @@ import { computed, type CSSProperties } from 'vue'
 import { useResponseImage } from './use-response-image'
 
 const { getParam } = useResponseImage()
-const getImageUrl = getParam('getImageUrl') || ((src: string) => src)
 
 const props = withDefaults(
   defineProps<{
     /** 图片路径 */
     src: string
+    /** 是否禁用 */
+    disabled?: boolean
     /** CDN 基础路径 */
     cdnBase?: string
     /** 图片格式列表 */
@@ -43,17 +44,21 @@ const props = withDefaults(
     retinas?: number[]
     /** sizes 属性 */
     sizes?: string
+    /** 获取图片 URL 的函数 */
+    getImageUrl?: (src: string, format: string, scale: number) => string
     /** 是否懒加载 */
     lazy?: boolean
     /** 图片样式 */
     imgStyle?: CSSProperties
   }>(),
   {
+    disabled: undefined,
     cdnBase: '',
     formats: undefined,
     widths: undefined,
     retinas: undefined,
     sizes: undefined,
+    getImageUrl: undefined,
     lazy: true,
     imgStyle: () => ({})
   }
@@ -64,8 +69,52 @@ const emit = defineEmits<{
   error: [Error]
 }>()
 
+const parsedDisabled = computed(() => {
+  return props.disabled ?? getParam('disabled') ?? false
+})
+
+const parsedCdnBase = computed(() => {
+  return props.cdnBase ?? getParam('cdnBase') ?? ''
+})
+
+const parsedFormats = computed(() => {
+  if (parsedDisabled.value) {
+    return []
+  }
+  return props.formats || getParam('formats') || []
+})
+
+const parsedWidths = computed(() => {
+  if (parsedDisabled.value) {
+    return []
+  }
+  return props.widths || getParam('widths') || []
+})
+
+const parsedRetinas = computed(() => {
+  if (parsedDisabled.value) {
+    return []
+  }
+  return props.retinas || getParam('retinas') || []
+})
+
+const parsedSizes = computed(() => {
+  if (parsedDisabled.value) {
+    return undefined
+  }
+  return props.sizes || getParam('sizes') || undefined
+})
+
+const parsedGetImageUrl = computed(() => {
+  const fallback = (src: string) => src
+  if (parsedDisabled.value) {
+    return fallback
+  }
+  return props.getImageUrl || getParam('getImageUrl') || fallback
+})
+
 const parsedSrc = computed(() => {
-  const cdnBase = props.cdnBase || getParam('cdnBase') || ''
+  const cdnBase = parsedCdnBase.value
   let src = props.src
   let fallbackFormat = 'png'
 
@@ -86,22 +135,6 @@ const parsedSrc = computed(() => {
   }
 })
 
-const parsedFormats = computed(() => {
-  return props.formats || getParam('formats') || []
-})
-
-const parsedWidths = computed(() => {
-  return props.widths || getParam('widths') || []
-})
-
-const parsedRetinas = computed(() => {
-  return props.retinas || getParam('retinas') || []
-})
-
-const parsedSizes = computed(() => {
-  return props.sizes || getParam('sizes') || undefined
-})
-
 const fallbackSrc = computed(() => {
   const { src, fallbackFormat } = parsedSrc.value
   const widths = parsedWidths.value
@@ -111,7 +144,7 @@ const fallbackSrc = computed(() => {
     const minRetina = Math.min(...retinas)
     const maxRetina = Math.max(...retinas)
     const scale = minRetina / maxRetina
-    return getImageUrl(src, fallbackFormat, scale)
+    return parsedGetImageUrl.value(src, fallbackFormat, scale)
   }
 
   const allWidths = new Set<number>()
@@ -129,10 +162,10 @@ const fallbackSrc = computed(() => {
     const minWidth = Math.min(...Array.from(allWidths))
     const maxWidth = Math.max(...Array.from(allWidths))
     const scale = minWidth / maxWidth
-    return getImageUrl(src, fallbackFormat, scale)
+    return parsedGetImageUrl.value(src, fallbackFormat, scale)
   }
 
-  return getImageUrl(src, fallbackFormat, 1)
+  return parsedGetImageUrl.value(src, fallbackFormat, 1)
 })
 
 const getMimeType = (format: string): string => {
@@ -154,7 +187,7 @@ const generateSrcset = (format: string): string => {
   if (widths.length <= 0 && retinas.length > 0) {
     const maxRetina = Math.max(...parsedRetinas.value)
     return retinas
-      .map((retina) => `${getImageUrl(src, format, retina / maxRetina)} ${retina}x`)
+      .map((retina) => `${parsedGetImageUrl.value(src, format, retina / maxRetina)} ${retina}x`)
       .join(', ')
   }
 
@@ -172,11 +205,11 @@ const generateSrcset = (format: string): string => {
   if (allWidths.size > 0) {
     const maxWidth = Math.max(...Array.from(allWidths))
     return Array.from(allWidths)
-      .map((width) => `${getImageUrl(src, format, width / maxWidth)} ${width}w`)
+      .map((width) => `${parsedGetImageUrl.value(src, format, width / maxWidth)} ${width}w`)
       .join(', ')
   }
 
-  return getImageUrl(src, format, 1)
+  return parsedGetImageUrl.value(src, format, 1)
 }
 
 const handleLoad = (e: Event) => {

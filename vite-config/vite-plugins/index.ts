@@ -8,6 +8,7 @@ import legacy from '@vitejs/plugin-legacy'
 import viteCompression from 'vite-plugin-compression'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import dayjs from 'dayjs'
+import OSS from 'ali-oss'
 
 import ViteHtmlTransform from './vite-html-transform'
 import viteImgCompress from './vite-img-compress'
@@ -96,11 +97,18 @@ export function getPlugins(viteEnv: Env.ImportMeta, isBuild: boolean): PluginOpt
       viteImgUpload({
         enable: true,
         // 上传函数示例 - 需要根据实际情况实现
-        upload: async () => {
-          // 示例：上传到 OSS/CDN
-          // const url = await uploadToOSS(fileName, content)
-          // return url
-          return ''
+        upload: async (fileName: string, content: Buffer) => {
+          if (!import.meta.env.VITE_OSS_ACCESS_KEY_ID) {
+            return ''
+          }
+          const aliInfo = {
+            region: import.meta.env.VITE_OSS_REGION,
+            bucket: import.meta.env.VITE_OSS_BUCKET,
+            accessKeyId: import.meta.env.VITE_OSS_ACCESS_KEY_ID,
+            accessKeySecret: import.meta.env.VITE_OSS_ACCESS_KEY_SECRET
+          }
+          const client = new OSS(aliInfo)
+          return await client.put(`admin/assets/${fileName}`, content)
         }
       })
     )
