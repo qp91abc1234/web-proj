@@ -5,6 +5,7 @@ import { Lock, User, Refresh, Check } from '@element-plus/icons-vue'
 import { type FormRules, type FormInstance, ElMessage } from 'element-plus'
 import { useUserStore } from '@/store/modules/user-store'
 import { getCaptcha } from '@/common/api/auth'
+import Tst from '@/assets/tst.png'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -88,6 +89,7 @@ const handleLogin = async (formEl: FormInstance | undefined) => {
 
 <template>
   <div class="login-container">
+    <responsive-image :src="Tst" />
     <div class="login-box">
       <div class="login-left">
         <div class="login-title">
