@@ -22,7 +22,11 @@ import type { PluginOption } from 'vite'
  * @param viteEnv 环境变量
  * @param isBuild 是否为构建命令
  */
-export function getPlugins(viteEnv: Env.ImportMeta, isBuild: boolean): PluginOption[] {
+export function getPlugins(
+  viteEnv: Env.ImportMeta,
+  isBuild: boolean,
+  base?: string
+): PluginOption[] {
   const buildTime = dayjs().format('YYYY-MM-DD HH:mm:ss')
 
   const plugins: PluginOption[] = [
@@ -93,25 +97,26 @@ export function getPlugins(viteEnv: Env.ImportMeta, isBuild: boolean): PluginOpt
 
     // 构建时启用图片上传（在图片压缩后执行）
     // 注意：需要配置 upload 函数才能启用
-    plugins.push(
-      viteImgUpload({
-        enable: true,
-        // 上传函数示例 - 需要根据实际情况实现
-        upload: async (fileName: string, content: Buffer) => {
-          if (!import.meta.env.VITE_OSS_ACCESS_KEY_ID) {
-            return ''
+    if (viteEnv.VITE_OSS_ACCESS_KEY_ID) {
+      const ossPath = base && base.length > 0 ? base : ''
+      const aliInfo = {
+        region: viteEnv.VITE_OSS_REGION,
+        bucket: viteEnv.VITE_OSS_BUCKET,
+        accessKeyId: viteEnv.VITE_OSS_ACCESS_KEY_ID,
+        accessKeySecret: viteEnv.VITE_OSS_ACCESS_KEY_SECRET
+      }
+      const client = new OSS(aliInfo)
+      plugins.push(
+        viteImgUpload({
+          enable: true,
+          // 上传函数示例 - 需要根据实际情况实现
+          upload: async (fileName: string, content: Buffer) => {
+            const ret = await client.put(`${ossPath}${fileName}`, content)
+            return ret.url
           }
-          const aliInfo = {
-            region: import.meta.env.VITE_OSS_REGION,
-            bucket: import.meta.env.VITE_OSS_BUCKET,
-            accessKeyId: import.meta.env.VITE_OSS_ACCESS_KEY_ID,
-            accessKeySecret: import.meta.env.VITE_OSS_ACCESS_KEY_SECRET
-          }
-          const client = new OSS(aliInfo)
-          return await client.put(`admin/assets/${fileName}`, content)
-        }
-      })
-    )
+        })
+      )
+    }
 
     // 构建时启用 gzip 压缩
     plugins.push(

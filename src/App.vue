@@ -1,20 +1,17 @@
 <script setup lang="ts">
 import { zhCn } from 'element-plus/es/locales.mjs'
 import { useResponseImage } from '@/components/responsive-image/use-response-image'
+
 const { setupResponseImage } = useResponseImage()
 
-setupResponseImage(
-  import.meta.env.DEV
-    ? undefined
-    : {
-        cdnBase: 'https://md-pic-lib.oss-cn-hangzhou.aliyuncs.com',
-        formats: ['avif', 'webp'],
-        retinas: [1, 2],
-        getImageUrl(src, format, scale) {
-          return `${src}?x-oss-process=image/format,${format}/resize,p_${Math.round(scale * 100)}`
-        }
-      }
-)
+setupResponseImage({
+  disabled: !!import.meta.env.DEV,
+  formats: ['avif', 'webp'],
+  retinas: [1, 2, 3],
+  getImageUrl: (src: string, format: string, scale: number) => {
+    return `${src}?x-oss-process=image/format,${format}/resize,p_${Math.round(scale * 100)}`
+  }
+})
 </script>
 
 <template>

@@ -130,7 +130,8 @@ export default function viteImgUpload(options: ViteImgUploadOptions): Plugin {
 
       // 遍历所有上传的图片，替换引用
       fileUrlMap.forEach((url, fileName) => {
-        const pattern = createImagePattern(fileName)
+        const base = viteConfig.base && viteConfig.base.length > 0 ? viteConfig.base : ''
+        const pattern = createImagePattern(base + fileName)
         const newCode = code.replace(pattern, `$1${url}$1`)
         if (newCode !== code) {
           code = newCode
@@ -165,7 +166,8 @@ export default function viteImgUpload(options: ViteImgUploadOptions): Plugin {
       let hasReplaced = false
 
       fileUrlMap.forEach((url, fileName) => {
-        const pattern = createCssUrlPattern(fileName)
+        const base = viteConfig.base && viteConfig.base.length > 0 ? viteConfig.base : ''
+        const pattern = createCssUrlPattern(base + fileName)
         const newSource = source.replace(pattern, `url($1${url}$1)`)
         if (newSource !== source) {
           source = newSource
