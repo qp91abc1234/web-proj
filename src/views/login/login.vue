@@ -89,7 +89,7 @@ const handleLogin = async (formEl: FormInstance | undefined) => {
 
 <template>
   <div class="login-container">
-    <responsive-image :src="Tst" :img-style="{ objectFit: 'cover' }" />
+    <responsive-image :src="Tst" :img-style="{ objectFit: 'contain' }" />
     <div class="login-box">
       <div class="login-left">
         <div class="login-title">
