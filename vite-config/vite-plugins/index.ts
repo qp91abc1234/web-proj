@@ -97,14 +97,14 @@ export function getPlugins(
 
     // 构建时启用图片上传（在图片压缩后执行）
     // 注意：需要配置 upload 函数才能启用
-    if (viteEnv.VITE_OSS_ACCESS_KEY_ID) {
+    const aliInfo = {
+      region: process.env.VITE_OSS_REGION || viteEnv.VITE_OSS_REGION,
+      bucket: process.env.VITE_OSS_BUCKET || viteEnv.VITE_OSS_BUCKET,
+      accessKeyId: process.env.VITE_OSS_ACCESS_KEY_ID || viteEnv.VITE_OSS_ACCESS_KEY_ID,
+      accessKeySecret: process.env.VITE_OSS_ACCESS_KEY_SECRET || viteEnv.VITE_OSS_ACCESS_KEY_SECRET
+    }
+    if (aliInfo.accessKeyId && aliInfo.accessKeySecret) {
       const ossPath = base && base.length > 0 ? base : ''
-      const aliInfo = {
-        region: viteEnv.VITE_OSS_REGION,
-        bucket: viteEnv.VITE_OSS_BUCKET,
-        accessKeyId: viteEnv.VITE_OSS_ACCESS_KEY_ID,
-        accessKeySecret: viteEnv.VITE_OSS_ACCESS_KEY_SECRET
-      }
       const client = new OSS(aliInfo)
       plugins.push(
         viteImgUpload({
