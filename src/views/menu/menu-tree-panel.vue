@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Delete, Plus, Lock } from '@element-plus/icons-vue'
+import { Delete, Plus, Lock, Folder } from '@element-plus/icons-vue'
 import { updateMenuSort, deleteMenu } from '@/common/api/permission'
 import MenuFormDialog from './dialogs/menu-form-dialog.vue'
 import { useInject } from './menu-context'
@@ -13,9 +13,11 @@ const menuFormDialogRef = ref<InstanceType<typeof MenuFormDialog>>()
 const getAddParams = (parentNode?: MenuItem) => {
   let sort = 0
   if (parentNode) {
-    const lastChild = parentNode.children[parentNode.children.length - 1]
-    if (lastChild) {
-      sort = lastChild.sort + 1
+    if (parentNode.children) {
+      const lastChild = parentNode.children[parentNode.children.length - 1]
+      if (lastChild) {
+        sort = lastChild.sort + 1
+      }
     }
   } else {
     const lastNode = menuTree.value[menuTree.value.length - 1]
@@ -147,14 +149,17 @@ const handleDelete = async (node: MenuItem) => {
       <template #default="{ node, data }">
         <div class="tree-node">
           <span class="node-label">
+            <el-icon v-if="data.type === 0" class="directory-icon" :size="14">
+              <Folder />
+            </el-icon>
+            <span>{{ node.label }}</span>
             <el-icon v-if="data.isSystem" class="system-icon" :size="14">
               <Lock />
             </el-icon>
-            <span>{{ node.label }}</span>
           </span>
           <span v-if="!data.isSystem" class="node-actions">
             <!-- 目录节点：显示添加目录和添加菜单项两个按钮 -->
-            <template v-if="!data.compPath || data.compPath === ''">
+            <template v-if="data.type === 0">
               <permission-button
                 type="primary"
                 link
@@ -162,7 +167,7 @@ const handleDelete = async (node: MenuItem) => {
                 :icon="Plus"
                 @click.stop="handleAddDirectory(data)"
               >
-                添加目录
+                添加子目录
               </permission-button>
               <permission-button
                 type="primary"
@@ -171,19 +176,7 @@ const handleDelete = async (node: MenuItem) => {
                 :icon="Plus"
                 @click.stop="handleAddMenuItem(data)"
               >
-                添加菜单项
-              </permission-button>
-            </template>
-            <!-- 菜单项节点：只显示添加菜单项按钮 -->
-            <template v-else>
-              <permission-button
-                type="primary"
-                link
-                size="small"
-                :icon="Plus"
-                @click.stop="handleAddMenuItem(data)"
-              >
-                添加菜单项
+                添加子菜单项
               </permission-button>
             </template>
             <permission-button
@@ -250,6 +243,11 @@ const handleDelete = async (node: MenuItem) => {
       display: flex;
       gap: 6px;
       align-items: center;
+
+      .directory-icon {
+        flex-shrink: 0;
+        color: var(--el-color-primary);
+      }
 
       .system-icon {
         flex-shrink: 0;
