@@ -10,6 +10,25 @@ import type { MenuItem } from '@/common/types/permission'
 const { menuTree, loading, setCurrentNode, loadMenuTree } = useInject()
 const menuFormDialogRef = ref<InstanceType<typeof MenuFormDialog>>()
 
+const getAddParams = (parentNode?: MenuItem) => {
+  let sort = 0
+  if (parentNode) {
+    const lastChild = parentNode.children[parentNode.children.length - 1]
+    if (lastChild) {
+      sort = lastChild.sort + 1
+    }
+  } else {
+    const lastNode = menuTree.value[menuTree.value.length - 1]
+    if (lastNode) {
+      sort = lastNode.sort + 1
+    }
+  }
+  return {
+    parentId: parentNode?.id ?? null,
+    sort
+  }
+}
+
 const handleAllowDrag = (dragNode: any) => {
   const dragNodeData = dragNode.data as MenuItem
 
@@ -68,12 +87,14 @@ const handleDragEnd = async (_dragNode: any, _dropNode: any, dropType: string) =
 
 // 新增目录
 const handleAddDirectory = (parentNode?: MenuItem) => {
-  menuFormDialogRef.value?.open(parentNode, 'directory')
+  const { parentId, sort } = getAddParams(parentNode)
+  menuFormDialogRef.value?.open(parentId, sort, 'directory')
 }
 
 // 新增菜单项
 const handleAddMenuItem = (parentNode?: MenuItem) => {
-  menuFormDialogRef.value?.open(parentNode, 'menu')
+  const { parentId, sort } = getAddParams(parentNode)
+  menuFormDialogRef.value?.open(parentId, sort, 'menu')
 }
 
 // 删除菜单

@@ -2,7 +2,6 @@
 import { ref, reactive } from 'vue'
 import { ElMessage, type FormInstance } from 'element-plus'
 import { createMenu } from '@/common/api/permission'
-import type { MenuItem } from '@/common/types/permission'
 
 const emit = defineEmits<{
   (e: 'success'): void
@@ -41,12 +40,11 @@ const resetForm = () => {
 }
 
 // 打开对话框
-const open = (parentNode?: MenuItem | null, type: 'directory' | 'menu' = 'menu') => {
+const open = (parentId: number | null, sort: number, type: 'directory' | 'menu' = 'menu') => {
   dialogTitle.value = type === 'directory' ? '新建目录' : '新建菜单项'
   resetForm()
-  if (parentNode) {
-    menuForm.parentId = parentNode.id
-  }
+  menuForm.parentId = parentId
+  menuForm.sort = sort
   // 目录不需要组件路径
   if (type === 'directory') {
     menuForm.type = 0
@@ -118,9 +116,6 @@ defineExpose({
           v-model="menuForm.compPath"
           placeholder="请输入组件路径，如：/src/views/user/user.vue"
         />
-      </el-form-item>
-      <el-form-item label="排序">
-        <el-input-number v-model="menuForm.sort" :min="0" style="width: 100%" />
       </el-form-item>
       <el-form-item label="是否显示">
         <el-switch v-model="menuForm.visible" :active-value="true" :inactive-value="false" />
