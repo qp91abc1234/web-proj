@@ -10,6 +10,7 @@ const emit = defineEmits<{
 const dialogVisible = ref(false)
 const dialogTitle = ref('')
 const menuFormRef = ref<FormInstance>()
+let updateMenuSortFn: () => void
 
 // 菜单表单
 const menuForm = reactive({
@@ -40,7 +41,12 @@ const resetForm = () => {
 }
 
 // 打开对话框
-const open = (parentId: number | null, sort: number, type: 'directory' | 'menu' = 'menu') => {
+const open = (
+  parentId: number | null,
+  sort: number,
+  type: 'directory' | 'menu' = 'menu',
+  updateMenuSort?: () => void
+) => {
   dialogTitle.value = type === 'directory' ? '新建目录' : '新建菜单项'
   resetForm()
   menuForm.parentId = parentId
@@ -50,6 +56,9 @@ const open = (parentId: number | null, sort: number, type: 'directory' | 'menu' 
     menuForm.type = 0
   } else {
     menuForm.type = 1
+  }
+  if (updateMenuSort) {
+    updateMenuSortFn = updateMenuSort
   }
 
   menuFormRef.value?.resetFields()
@@ -64,6 +73,9 @@ const handleSave = async (formEl: FormInstance | undefined) => {
     if (valid) {
       try {
         await createMenu(menuForm)
+        if (updateMenuSortFn) {
+          await updateMenuSortFn()
+        }
         ElMessage.success('新增成功')
         dialogVisible.value = false
         emit('success')

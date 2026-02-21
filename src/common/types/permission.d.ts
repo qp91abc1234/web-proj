@@ -56,6 +56,6 @@ export interface MenuTreeResponse {
 // 菜单排序参数
 export interface MenuSortParams {
   id: number
-  parentId?: number
+  parentId: number | null
   sort: number
 }

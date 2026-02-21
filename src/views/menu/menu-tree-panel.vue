@@ -6,15 +6,16 @@ import { updateMenuSort, deleteMenu } from '@/common/api/permission'
 import MenuFormDialog from './dialogs/menu-form-dialog.vue'
 import { useInject } from './menu-context'
 import type { MenuItem } from '@/common/types/permission'
+import type Node from 'element-plus/es/components/tree/src/model/node.mjs'
 
 const { menuTree, loading, setCurrentNode, loadMenuTree } = useInject()
 const menuFormDialogRef = ref<InstanceType<typeof MenuFormDialog>>()
 
-const getAddParams = (parentNode?: MenuItem) => {
+const getAddParams = (parentData?: MenuItem) => {
   let sort = 0
-  if (parentNode) {
-    if (parentNode.children) {
-      const lastChild = parentNode.children[parentNode.children.length - 1]
+  if (parentData) {
+    if (parentData.children) {
+      const lastChild = parentData.children[parentData.children.length - 1]
       if (lastChild) {
         sort = lastChild.sort + 1
       }
@@ -26,7 +27,7 @@ const getAddParams = (parentNode?: MenuItem) => {
     }
   }
   return {
-    parentId: parentNode?.id ?? null,
+    parentId: parentData?.id ?? null,
     sort
   }
 }
@@ -59,9 +60,9 @@ const handleDragEnd = async (_dragNode: any, _dropNode: any, dropType: string) =
   if (dropType === 'none') return
 
   // 构建排序数据
-  const items: Array<{ id: number; parentId?: number; sort: number }> = []
+  const items: Array<{ id: number; parentId: number | null; sort: number }> = []
 
-  const traverse = (nodes: MenuItem[], parentId?: number, startSort = 0) => {
+  const traverse = (nodes: MenuItem[], parentId: number | null = null, startSort = 0) => {
     nodes.forEach((node, index) => {
       items.push({
         id: node.id,
@@ -88,26 +89,53 @@ const handleDragEnd = async (_dragNode: any, _dropNode: any, dropType: string) =
 }
 
 // 新增目录
-const handleAddDirectory = (parentNode?: MenuItem) => {
-  const { parentId, sort } = getAddParams(parentNode)
+const handleAddDirectory = (parentData?: MenuItem) => {
+  const { parentId, sort } = getAddParams(parentData)
   menuFormDialogRef.value?.open(parentId, sort, 'directory')
 }
 
 // 新增菜单项
-const handleAddMenuItem = (parentNode?: MenuItem) => {
-  const { parentId, sort } = getAddParams(parentNode)
+const handleAddMenuItem = (parentData?: MenuItem) => {
+  const { parentId, sort } = getAddParams(parentData)
   menuFormDialogRef.value?.open(parentId, sort, 'menu')
 }
 
+const handleAddSiblingMenuItem = (node: Node) => {
+  const isRootParent = !node.parent?.parent
+  let parentId = null
+  if (!isRootParent) {
+    parentId = node.parent?.data.id
+  }
+  const sort = node.data.sort + 1
+
+  const updateMenuSortFn = async () => {
+    const items: Array<{ id: number; parentId: number | null; sort: number }> = []
+    const childrens = isRootParent ? node.parent?.data : node.parent?.data.children
+    childrens.forEach((child: MenuItem) => {
+      if (child.sort > node.data.sort) {
+        items.push({
+          id: child.id,
+          parentId,
+          sort: child.sort + 1
+        })
+      }
+    })
+
+    await updateMenuSort(items)
+  }
+
+  menuFormDialogRef.value?.open(parentId, sort, 'menu', updateMenuSortFn)
+}
+
 // 删除菜单
-const handleDelete = async (node: MenuItem) => {
+const handleDelete = async (data: MenuItem) => {
   try {
     await ElMessageBox.confirm('确定要删除该菜单吗？', '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning'
     })
-    await deleteMenu(node.id)
+    await deleteMenu(data.id)
     ElMessage.success('删除成功')
     setCurrentNode(null)
     await loadMenuTree()
@@ -152,7 +180,7 @@ const handleDelete = async (node: MenuItem) => {
             <el-icon v-if="data.type === 0" class="directory-icon" :size="14">
               <Folder />
             </el-icon>
-            <span>{{ node.label }}</span>
+            <span>{{ data.name }}</span>
             <el-icon v-if="data.isSystem" class="system-icon" :size="14">
               <Lock />
             </el-icon>
@@ -179,6 +207,16 @@ const handleDelete = async (node: MenuItem) => {
                 添加子菜单项
               </permission-button>
             </template>
+            <permission-button
+              v-else
+              type="primary"
+              link
+              size="small"
+              :icon="Plus"
+              @click.stop="handleAddSiblingMenuItem(node)"
+            >
+              添加兄弟菜单项
+            </permission-button>
             <permission-button
               type="danger"
               link
