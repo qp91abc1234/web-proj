@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Delete, Plus, Lock, Folder } from '@element-plus/icons-vue'
+import { Delete, Plus, Lock, Folder, ArrowDown } from '@element-plus/icons-vue'
 import { updateMenuSort, deleteMenu } from '@/common/api/permission'
 import MenuFormDialog from './dialogs/menu-form-dialog.vue'
 import { useInject } from './menu-context'
@@ -10,27 +10,6 @@ import type Node from 'element-plus/es/components/tree/src/model/node.mjs'
 
 const { menuTree, loading, setCurrentNode, loadMenuTree } = useInject()
 const menuFormDialogRef = ref<InstanceType<typeof MenuFormDialog>>()
-
-const getAddParams = (parentData?: MenuItem) => {
-  let sort = 0
-  if (parentData) {
-    if (parentData.children) {
-      const lastChild = parentData.children[parentData.children.length - 1]
-      if (lastChild) {
-        sort = lastChild.sort + 1
-      }
-    }
-  } else {
-    const lastNode = menuTree.value[menuTree.value.length - 1]
-    if (lastNode) {
-      sort = lastNode.sort + 1
-    }
-  }
-  return {
-    parentId: parentData?.id ?? null,
-    sort
-  }
-}
 
 const handleAllowDrag = (dragNode: any) => {
   const dragNodeData = dragNode.data as MenuItem
@@ -88,43 +67,48 @@ const handleDragEnd = async (_dragNode: any, _dropNode: any, dropType: string) =
   }
 }
 
-// 新增目录
-const handleAddDirectory = (parentData?: MenuItem) => {
-  const { parentId, sort } = getAddParams(parentData)
-  menuFormDialogRef.value?.open(parentId, sort, 'directory')
-}
+const handleAdd = (node: Node | null, isDir = true, isSibling = false) => {
+  let parentId: number | null = null
+  let sort = 0
+  if (!node) {
+    parentId = null
+    const lastNode = menuTree.value[menuTree.value.length - 1]
+    if (lastNode) {
+      sort = lastNode.sort + 1
+    }
+    menuFormDialogRef.value?.open(parentId, sort, isDir)
+  } else if (isSibling) {
+    const isRootParent = !node.parent?.parent
+    sort = node.data.sort + 1
+    if (!isRootParent) {
+      parentId = node.parent?.data.id ?? null
+    }
 
-// 新增菜单项
-const handleAddMenuItem = (parentData?: MenuItem) => {
-  const { parentId, sort } = getAddParams(parentData)
-  menuFormDialogRef.value?.open(parentId, sort, 'menu')
-}
+    const updateMenuSortFn = async () => {
+      const items: Array<{ id: number; parentId: number | null; sort: number }> = []
+      const siblings: MenuItem[] = isRootParent
+        ? menuTree.value
+        : (node.parent?.data?.children ?? [])
 
-const handleAddSiblingMenuItem = (node: Node) => {
-  const isRootParent = !node.parent?.parent
-  let parentId = null
-  if (!isRootParent) {
-    parentId = node.parent?.data.id
-  }
-  const sort = node.data.sort + 1
+      siblings.forEach((child: MenuItem) => {
+        if (child.sort >= sort) {
+          items.push({ id: child.id, parentId, sort: child.sort + 1 })
+        }
+      })
+      if (items.length > 0) await updateMenuSort(items)
+    }
 
-  const updateMenuSortFn = async () => {
-    const items: Array<{ id: number; parentId: number | null; sort: number }> = []
-    const childrens = isRootParent ? node.parent?.data : node.parent?.data.children
-    childrens.forEach((child: MenuItem) => {
-      if (child.sort > node.data.sort) {
-        items.push({
-          id: child.id,
-          parentId,
-          sort: child.sort + 1
-        })
+    menuFormDialogRef.value?.open(parentId, sort, isDir, updateMenuSortFn)
+  } else {
+    parentId = node.data.id ?? null
+    if (node.data.children) {
+      const lastChild = node.data.children[node.data.children.length - 1]
+      if (lastChild) {
+        sort = lastChild.sort + 1
       }
-    })
-
-    await updateMenuSort(items)
+    }
+    menuFormDialogRef.value?.open(parentId, sort, isDir)
   }
-
-  menuFormDialogRef.value?.open(parentId, sort, 'menu', updateMenuSortFn)
 }
 
 // 删除菜单
@@ -153,10 +137,20 @@ const handleDelete = async (data: MenuItem) => {
       <div class="card-header">
         <span>菜单树</span>
         <div class="header-actions">
-          <permission-button type="primary" :icon="Plus" size="small" @click="handleAddDirectory()">
+          <permission-button
+            type="primary"
+            :icon="Plus"
+            size="small"
+            @click="handleAdd(null, true)"
+          >
             新建目录
           </permission-button>
-          <permission-button type="primary" :icon="Plus" size="small" @click="handleAddMenuItem()">
+          <permission-button
+            type="primary"
+            :icon="Plus"
+            size="small"
+            @click="handleAdd(null, false)"
+          >
             新建菜单项
           </permission-button>
         </div>
@@ -185,38 +179,36 @@ const handleDelete = async (data: MenuItem) => {
               <Lock />
             </el-icon>
           </span>
-          <span v-if="!data.isSystem" class="node-actions">
-            <!-- 目录节点：显示添加目录和添加菜单项两个按钮 -->
-            <template v-if="data.type === 0">
-              <permission-button
-                type="primary"
-                link
-                size="small"
-                :icon="Plus"
-                @click.stop="handleAddDirectory(data)"
-              >
-                添加子目录
-              </permission-button>
-              <permission-button
-                type="primary"
-                link
-                size="small"
-                :icon="Plus"
-                @click.stop="handleAddMenuItem(data)"
-              >
-                添加子菜单项
-              </permission-button>
-            </template>
-            <permission-button
-              v-else
-              type="primary"
-              link
-              size="small"
-              :icon="Plus"
-              @click.stop="handleAddSiblingMenuItem(node)"
+          <span v-if="!data.isSystem">
+            <!-- 目录节点：添加目录/菜单项下拉 -->
+            <el-dropdown
+              @command="
+                (cmd: string) => {
+                  if (cmd === 'dir-sibling') handleAdd(node, true, true)
+                  else if (cmd === 'dir-child') handleAdd(node, true, false)
+                  else if (cmd === 'menu-sibling') handleAdd(node, false, true)
+                  else handleAdd(node, false, false)
+                }
+              "
             >
-              添加兄弟菜单项
-            </permission-button>
+              <permission-button type="primary" link size="small" :icon="Plus" @click.stop>
+                添加
+                <el-icon class="el-icon--right"><ArrowDown /></el-icon>
+              </permission-button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <template v-if="data.type === 0">
+                    <el-dropdown-item command="dir-sibling">添加同级目录</el-dropdown-item>
+                    <el-dropdown-item command="dir-child">添加子级目录</el-dropdown-item>
+                    <el-dropdown-item command="menu-sibling">添加同级菜单项</el-dropdown-item>
+                    <el-dropdown-item command="menu-child">添加子级菜单项</el-dropdown-item>
+                  </template>
+                  <template v-else>
+                    <el-dropdown-item command="menu-sibling">添加同级菜单项</el-dropdown-item>
+                  </template>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
             <permission-button
               type="danger"
               link
@@ -294,12 +286,10 @@ const handleDelete = async (data: MenuItem) => {
       }
     }
 
-    .node-actions {
-      display: none;
-    }
-
-    &:hover .node-actions {
-      display: block;
+    // 去掉「添加」下拉触发及按钮的 focus/hover outline
+    :deep(.el-button:hover),
+    :deep(.el-button:focus) {
+      outline: none;
     }
   }
 }

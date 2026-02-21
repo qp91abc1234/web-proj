@@ -44,15 +44,15 @@ const resetForm = () => {
 const open = (
   parentId: number | null,
   sort: number,
-  type: 'directory' | 'menu' = 'menu',
+  isDir: boolean,
   updateMenuSort?: () => void
 ) => {
-  dialogTitle.value = type === 'directory' ? '新建目录' : '新建菜单项'
+  dialogTitle.value = isDir ? '新建目录' : '新建菜单项'
   resetForm()
   menuForm.parentId = parentId
   menuForm.sort = sort
   // 目录不需要组件路径
-  if (type === 'directory') {
+  if (isDir) {
     menuForm.type = 0
   } else {
     menuForm.type = 1
