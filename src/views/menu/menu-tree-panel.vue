@@ -35,21 +35,19 @@ const handleAllowDrop = (_dragNode: any, dropNode: any, type: string) => {
 }
 
 // 菜单树拖拽结束
-const handleDragEnd = async (_dragNode: any, _dropNode: any, dropType: string) => {
-  if (dropType === 'none') return
-
+const handleDragEnd = async () => {
   // 构建排序数据
   const items: Array<{ id: number; parentId: number | null; sort: number }> = []
 
-  const traverse = (nodes: MenuItem[], parentId: number | null = null, startSort = 0) => {
-    nodes.forEach((node, index) => {
+  const traverse = (datas: MenuItem[], parentId: number | null = null) => {
+    datas.forEach((data, index) => {
       items.push({
-        id: node.id,
+        id: data.id,
         parentId,
-        sort: startSort + index
+        sort: index
       })
-      if (node.children && node.children.length > 0) {
-        traverse(node.children, node.id, 0)
+      if (data.children && data.children.length > 0) {
+        traverse(data.children, data.id)
       }
     })
   }
@@ -112,14 +110,14 @@ const handleAdd = (node: Node | null, isDir = true, isSibling = false) => {
 }
 
 // 删除菜单
-const handleDelete = async (data: MenuItem) => {
+const handleDelete = async (id: number) => {
   try {
     await ElMessageBox.confirm('确定要删除该菜单吗？', '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning'
     })
-    await deleteMenu(data.id)
+    await deleteMenu(id)
     ElMessage.success('删除成功')
     setCurrentNode(null)
     await loadMenuTree()
@@ -159,7 +157,6 @@ const handleDelete = async (data: MenuItem) => {
     <el-tree
       v-loading="loading"
       :data="menuTree"
-      :props="{ children: 'children', label: 'name' }"
       node-key="id"
       default-expand-all
       draggable
@@ -214,7 +211,7 @@ const handleDelete = async (data: MenuItem) => {
               link
               size="small"
               :icon="Delete"
-              @click.stop="handleDelete(data)"
+              @click.stop="handleDelete(data.id)"
             >
               删除
             </permission-button>

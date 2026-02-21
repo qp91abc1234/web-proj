@@ -72,10 +72,10 @@ const handleSave = async (formEl: FormInstance | undefined) => {
   await formEl.validate(async (valid) => {
     if (valid) {
       try {
-        await createMenu(menuForm)
         if (updateMenuSortFn) {
           await updateMenuSortFn()
         }
+        await createMenu(menuForm)
         ElMessage.success('新增成功')
         dialogVisible.value = false
         emit('success')
