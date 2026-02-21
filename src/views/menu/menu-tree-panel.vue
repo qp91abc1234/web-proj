@@ -275,6 +275,7 @@ const handleDelete = async (data: MenuItem) => {
     flex: 1;
     align-items: center;
     justify-content: space-between;
+    height: 100%;
     padding-right: 8px;
 
     .node-label {
