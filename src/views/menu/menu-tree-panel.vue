@@ -45,13 +45,16 @@ const handleDragEnd = async (dragNode: Node, dropNode: Node, type: string) => {
   const isRootDropParent = !dropNodeParent?.parent
 
   if (type === 'inner') {
+    let startSort = dragNode.data.sort
     let children = isRootDragParent ? menuTree.value : (dragNodeParent.value?.data.children ?? [])
     children.forEach((child: MenuItem, index: number) => {
-      items.push({
-        id: child.id,
-        parentId: dragNodeParent.value?.data.id ?? null,
-        sort: index
-      })
+      if (child.sort >= startSort) {
+        items.push({
+          id: child.id,
+          parentId: dragNodeParent.value?.data.id ?? null,
+          sort: index
+        })
+      }
     })
     children = dropNodeParent?.data.children
     const lastChild = children[children.length - 1]
@@ -61,30 +64,39 @@ const handleDragEnd = async (dragNode: Node, dropNode: Node, type: string) => {
       sort: lastChild.sort + 1
     })
   } else if (dragNodeParent.value?.data.id === dropNodeParent?.data.id) {
+    const startSort = Math.min(dragNode.data.sort, dropNode.data.sort)
     const children = isRootDragParent ? menuTree.value : (dragNodeParent.value?.data.children ?? [])
     children.forEach((child: MenuItem, index: number) => {
-      items.push({
-        id: child.id,
-        parentId: dragNodeParent.value?.data.id ?? null,
-        sort: index
-      })
+      if (child.sort >= startSort) {
+        items.push({
+          id: child.id,
+          parentId: dragNodeParent.value?.data.id ?? null,
+          sort: index
+        })
+      }
     })
   } else {
+    let startSort = dragNode.data.sort
     let children = isRootDragParent ? menuTree.value : (dragNodeParent.value?.data.children ?? [])
     children.forEach((child: MenuItem, index: number) => {
-      items.push({
-        id: child.id,
-        parentId: dragNodeParent.value?.data.id ?? null,
-        sort: index
-      })
+      if (child.sort >= startSort) {
+        items.push({
+          id: child.id,
+          parentId: dragNodeParent.value?.data.id ?? null,
+          sort: index
+        })
+      }
     })
+    startSort = dropNode.data.sort
     children = isRootDropParent ? menuTree.value : (dropNodeParent?.data.children ?? [])
     children.forEach((child: MenuItem, index: number) => {
-      items.push({
-        id: child.id,
-        parentId: dropNodeParent?.data.id ?? null,
-        sort: index
-      })
+      if (child.sort >= startSort) {
+        items.push({
+          id: child.id,
+          parentId: dropNodeParent?.data.id ?? null,
+          sort: index
+        })
+      }
     })
   }
 
