@@ -10,18 +10,20 @@ import type Node from 'element-plus/es/components/tree/src/model/node.mjs'
 
 const { menuTree, loading, setCurrentNode, loadMenuTree } = useInject()
 const menuFormDialogRef = ref<InstanceType<typeof MenuFormDialog>>()
+const dragNodeParent = ref<Node | null>(null)
 
-const handleAllowDrag = (dragNode: any) => {
+const handleAllowDrag = (dragNode: Node) => {
   const dragNodeData = dragNode.data as MenuItem
 
   if (dragNodeData.isSystem) {
     return false
   }
 
+  dragNodeParent.value = dragNode.parent
   return true
 }
 
-const handleAllowDrop = (_dragNode: any, dropNode: any, type: string) => {
+const handleAllowDrop = (_dragNode: Node, dropNode: Node, type: string) => {
   const dropNodeData = dropNode.data as MenuItem
 
   if (dropNodeData.isSystem) {
@@ -35,24 +37,56 @@ const handleAllowDrop = (_dragNode: any, dropNode: any, type: string) => {
 }
 
 // 菜单树拖拽结束
-const handleDragEnd = async () => {
+const handleDragEnd = async (dragNode: Node, dropNode: Node, type: string) => {
   // 构建排序数据
   const items: Array<{ id: number; parentId: number | null; sort: number }> = []
+  const dropNodeParent = type === 'inner' ? dropNode : dropNode.parent
+  const isRootDragParent = !dragNodeParent.value?.parent
+  const isRootDropParent = !dropNodeParent?.parent
 
-  const traverse = (datas: MenuItem[], parentId: number | null = null) => {
-    datas.forEach((data, index) => {
+  if (type === 'inner') {
+    let children = isRootDragParent ? menuTree.value : (dragNodeParent.value?.data.children ?? [])
+    children.forEach((child: MenuItem, index: number) => {
       items.push({
-        id: data.id,
-        parentId,
+        id: child.id,
+        parentId: dragNodeParent.value?.data.id ?? null,
         sort: index
       })
-      if (data.children && data.children.length > 0) {
-        traverse(data.children, data.id)
-      }
+    })
+    children = dropNodeParent?.data.children
+    const lastChild = children[children.length - 1]
+    items.push({
+      id: dragNode.data.id,
+      parentId: dropNodeParent?.data.id ?? null,
+      sort: lastChild.sort + 1
+    })
+  } else if (dragNodeParent.value?.data.id === dropNodeParent?.data.id) {
+    const children = isRootDragParent ? menuTree.value : (dragNodeParent.value?.data.children ?? [])
+    children.forEach((child: MenuItem, index: number) => {
+      items.push({
+        id: child.id,
+        parentId: dragNodeParent.value?.data.id ?? null,
+        sort: index
+      })
+    })
+  } else {
+    let children = isRootDragParent ? menuTree.value : (dragNodeParent.value?.data.children ?? [])
+    children.forEach((child: MenuItem, index: number) => {
+      items.push({
+        id: child.id,
+        parentId: dragNodeParent.value?.data.id ?? null,
+        sort: index
+      })
+    })
+    children = isRootDropParent ? menuTree.value : (dropNodeParent?.data.children ?? [])
+    children.forEach((child: MenuItem, index: number) => {
+      items.push({
+        id: child.id,
+        parentId: dropNodeParent?.data.id ?? null,
+        sort: index
+      })
     })
   }
-
-  traverse(menuTree.value)
 
   try {
     await updateMenuSort(items)
