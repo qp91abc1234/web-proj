@@ -29,7 +29,6 @@ export const allRoutes = [
     path: '/login',
     component: () => import('@/views/login/login.vue'),
     meta: {
-      visible: false,
       title: '登录'
     }
   },
@@ -48,5 +47,12 @@ export const allRoutes = [
         }
       }
     ]
+  },
+  {
+    path: '/test',
+    component: () => import('@/views/test/test.vue'),
+    meta: {
+      title: '测试'
+    }
   }
 ]

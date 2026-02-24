@@ -27,8 +27,4 @@ setupResponseImage({
   height: 100vh;
   background-color: var(--el-bg-color);
 }
-
-::-webkit-scrollbar {
-  display: none;
-}
 </style>
