@@ -29,15 +29,21 @@ type AsyncWatchCallback<T> = (
  * @example
  * ```ts
  * useAsyncWatch(userId, async (id, _, isValid, signal) => {
- *   const [user, orders, posts] = await Promise.all([
- *     axios.get(`/api/user/${id}`, { signal }),
- *     axios.get(`/api/orders/${id}`, { signal }),
- *     axios.get(`/api/posts/${id}`, { signal })
- *   ])
- *
- *   // 统一检查，统一更新
- *   if (isValid()) {
- *     userData.value = { user, orders, posts }
+ *   try {
+ *     const [user, orders, posts] = await Promise.all([
+ *       axios.get(`/api/user/${id}`, { signal }),
+ *       axios.get(`/api/orders/${id}`, { signal }),
+ *       axios.get(`/api/posts/${id}`, { signal })
+ *     ])
+ *     if (isValid()) {
+ *       userData.value = { user, orders, posts }
+ *     }
+ *   } catch (e) {
+ *     // 请求被 abort 时 axios 会 reject，这里会进来
+ *     if (axios.isCancel(e) || e?.name === 'AbortError') {
+ *       return // 取消不算错误，直接忽略
+ *     }
+ *     throw e // 其它错误再抛出或统一处理
  *   }
  * })
  * ```
