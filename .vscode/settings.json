@@ -11,7 +11,7 @@
   "scss.validate": false,
   "explorer.fileNesting.enabled": true,
   "explorer.fileNesting.patterns": {
-    "package.json": "pnpm-lock.yaml,.gitignore,components.d.ts,auto-imports.d.ts",
+    "package.json": "pnpm-lock.yaml,.gitignore,components.d.ts,auto-imports.d.ts,skills-lock.json",
     ".env": ".env.*",
     "tsconfig.json": "tsconfig.*",
     ".editorconfig": "eslint.config.mjs,.prettierrc,stylelint.config.mjs,.eslintignore,.stylelintignore,uno.config.ts,.browserslistrc,postcss.config.mjs"
