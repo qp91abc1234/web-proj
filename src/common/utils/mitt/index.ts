@@ -29,18 +29,22 @@ export function useEventBus(autoCleanup = true) {
   const handlers: Array<{ event: keyof Events; handler: any }> = []
 
   /**
-   * 移除单个监听器（内部方法）
+   * 移除监听器（内部方法）
+   * - 传入 handler: 移除当前实例该事件的指定监听
+   * - 不传 handler: 移除当前实例该事件的全部监听
    */
-  const removeHandler = <K extends keyof Events>(event: K, handler: (data: Events[K]) => void) => {
-    eventBus.off(event, handler)
-    const index = handlers.findIndex((h) => h.event === event && h.handler === handler)
-    if (index > -1) {
-      handlers.splice(index, 1)
+  const removeHandler = <K extends keyof Events>(event: K, handler?: (data: Events[K]) => void) => {
+    for (let i = handlers.length - 1; i >= 0; i -= 1) {
+      const item = handlers[i]
+      if (item.event === event && (!handler || item.handler === handler)) {
+        eventBus.off(item.event, item.handler)
+        handlers.splice(i, 1)
+      }
     }
   }
 
   /**
-   * 清理所有监听器（内部方法）
+   * 清理当前实例注册的所有监听器（内部方法）
    */
   const clearAllHandlers = () => {
     handlers.forEach(({ event, handler }) => {
@@ -104,19 +108,16 @@ export function useEventBus(autoCleanup = true) {
     },
 
     /**
-     * 取消监听
+     * 清除当前实例在指定事件上的监听
+     * - 传入 handler: 清除该事件下的指定监听
+     * - 不传 handler: 清除该事件下的全部监听
      */
     off<K extends keyof Events>(event: K, handler?: (data: Events[K]) => void): void {
-      if (handler) {
-        removeHandler(event, handler)
-      } else {
-        // 如果没有指定 handler，移除该事件的所有监听器
-        eventBus.off(event)
-      }
+      removeHandler(event, handler)
     },
 
     /**
-     * 清除当前实例的所有监听器
+     * 清除当前实例注册的所有监听器
      */
     clear: clearAllHandlers,
 

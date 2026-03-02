@@ -51,23 +51,21 @@ const hasTooltipContent = computed(() => {
 </script>
 
 <template>
-  <div>
-    <el-tooltip :placement="placement" :disabled="!tooltip || !isTruncated">
-      <template #content>
-        <!-- 如果提供了 tooltip-content 插槽则使用，否则使用默认插槽内容 -->
-        <slot v-if="hasTooltipContent" name="tooltip-content"></slot>
-        <slot v-else></slot>
-      </template>
-      <div
-        :class="truncateClass"
-        :style="{ '-webkit-line-clamp': lines }"
-        v-textTruncated="{ callback: (val) => (isTruncated = val), lines }"
-      >
-        <!-- 显示主要内容 -->
-        <slot></slot>
-      </div>
-    </el-tooltip>
-  </div>
+  <el-tooltip :placement="placement" :disabled="!tooltip || !isTruncated">
+    <template #content>
+      <!-- 如果提供了 tooltip-content 插槽则使用，否则使用默认插槽内容 -->
+      <slot v-if="hasTooltipContent" name="tooltip-content"></slot>
+      <slot v-else></slot>
+    </template>
+    <div
+      :class="truncateClass"
+      :style="{ '-webkit-line-clamp': lines }"
+      v-textTruncated="{ callback: (val) => (isTruncated = val), lines }"
+    >
+      <!-- 显示主要内容 -->
+      <slot></slot>
+    </div>
+  </el-tooltip>
 </template>
 
 <style lang="scss" scoped>
