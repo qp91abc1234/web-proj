@@ -2,6 +2,7 @@ import type { App, ComponentPublicInstance } from 'vue'
 import { ElMessage } from 'element-plus'
 
 import { logger } from './logger'
+import type { AxiosError } from 'axios'
 
 /**
  * 标记是否已经安装过错误处理
@@ -92,8 +93,8 @@ export function setupErrorHandling(app: App<Element>) {
     const reason = event.reason
 
     // 3.1 Axios 网络错误（超时、500、404 等）
-    if (reason && typeof reason === 'object' && (reason as any).isAxiosError) {
-      const axiosError = reason as any
+    if (reason && typeof reason === 'object' && (reason as AxiosError).isAxiosError) {
+      const axiosError = reason as AxiosError<{ message: string; code: string }>
       const response = axiosError.response
       const responseData = response?.data
 

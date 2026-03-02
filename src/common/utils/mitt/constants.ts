@@ -1,6 +1,23 @@
 import type { Events } from './types'
 
 /**
+ * 内部事件名称（仅事件总线内部使用）
+ *
+ * 约定：
+ * - 使用 Symbol 避免与业务字符串事件名冲突
+ * - 通过对象集中管理，方便后续扩展多个内部事件
+ */
+export const INTERNAL_EVENT_NAMES = {
+  OFF_GLOBAL_LISTENERS: Symbol('event-bus:off-global-listeners'),
+  CLEAR_ALL_LISTENERS: Symbol('event-bus:clear-all-listeners')
+} as const
+
+/**
+ * 内部事件名集合，用于快速判断某个事件是否为内部事件。
+ */
+export const INTERNAL_EVENT_NAME_SET = new Set(Object.values(INTERNAL_EVENT_NAMES))
+
+/**
  * 事件名称常量
  *
  * 使用常量代替字符串字面量，提供更好的：
