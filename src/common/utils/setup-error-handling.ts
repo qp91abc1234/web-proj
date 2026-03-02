@@ -84,46 +84,14 @@ export function setupErrorHandling(app: App<Element>) {
 
   /**
    * 3. 未处理的 Promise 异常
-   * 统一在这里对各类错误进行分类、包装、日志记录和用户提示
+   * 统一在这里按两类错误进行日志记录和用户提示：
+   * - 3.1 Axios 异常
+   * - 3.2 其他异常
    */
   window.addEventListener('unhandledrejection', (event) => {
     const reason = event.reason
 
-    // 3.1 API 业务错误（后端返回的非 200 状态）
-    if (reason && typeof reason === 'object' && (reason as any).isApiBusinessError) {
-      const errorResponse = reason
-      const { data, config } = errorResponse.response
-
-      // 包装成标准 Error 对象
-      const bizError = Object.assign(new Error(data.message || '业务错误'), {
-        isApiBusinessError: true as const,
-        status: data.status,
-        data: data.data,
-        config,
-        raw: data
-      })
-
-      // 记录日志
-      logger.error(
-        data.message || '业务错误',
-        {
-          tag: 'error:business',
-          status: data.status,
-          url: config?.url,
-          method: config?.method,
-          response: data,
-          unhandled: true
-        },
-        bizError
-      )
-
-      // 用户提示：优先使用后端返回的 message
-      ElMessage.error(data.message || '操作失败，请稍后重试')
-
-      return
-    }
-
-    // 3.2 Axios 网络错误（超时、500、404 等）
+    // 3.1 Axios 网络错误（超时、500、404 等）
     if (reason && typeof reason === 'object' && (reason as any).isAxiosError) {
       const axiosError = reason as any
       const response = axiosError.response
@@ -165,7 +133,7 @@ export function setupErrorHandling(app: App<Element>) {
       return
     }
 
-    // 3.3 其他 Promise 异常（普通 Error 或其他类型）
+    // 3.2 其他 Promise 异常（普通 Error 或其他类型）
     logger.error(
       reason instanceof Error ? reason.message : '未处理的 Promise 异常',
       {
