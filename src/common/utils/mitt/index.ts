@@ -31,7 +31,14 @@ const eventBus: Emitter<Events> = mitt<Events>()
  */
 export function useEventBus(autoCleanup = true) {
   const handlers: EventHandlerRecord[] = []
-
+  const internalEventBus = useInternalEventBus({
+    onOffGlobalListeners: (event) => {
+      removeHandler(event)
+    },
+    onClearAllListeners: () => {
+      clearAllHandlers()
+    }
+  })
   /**
    * 移除监听器（内部方法）
    * - 传入 handler: 移除当前实例该事件的指定监听
@@ -60,16 +67,6 @@ export function useEventBus(autoCleanup = true) {
     handlers.length = 0
     internalEventBus.clearInternalListeners()
   }
-
-  const internalEventBus = useInternalEventBus({
-    handlers,
-    onOffGlobalListeners: (event) => {
-      removeHandler(event)
-    },
-    onClearAllListeners: () => {
-      clearAllHandlers()
-    }
-  })
 
   // 自动清理：在 Vue 组件中使用时
   if (autoCleanup) {

@@ -2,7 +2,7 @@ import mitt from 'mitt'
 
 import { INTERNAL_EVENT_NAMES } from './constants'
 
-import type { EventHandlerRecord, Events } from './types'
+import type { Events } from './types'
 
 const internalEventBus = mitt()
 
@@ -16,7 +16,6 @@ const internalEventBus = mitt()
  *   2) 发送全局 off/clear 控制事件
  */
 export function useInternalEventBus(options: {
-  handlers: EventHandlerRecord[]
   onOffGlobalListeners: (event: keyof Events) => void
   onClearAllListeners: () => void
 }) {
