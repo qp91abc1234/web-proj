@@ -3,6 +3,7 @@ import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
 import UnoCSS from 'unocss/vite'
 import vueDevTools from 'vite-plugin-vue-devtools'
+import Inspect from 'vite-plugin-inspect'
 import { visualizer } from 'rollup-plugin-visualizer'
 import legacy from '@vitejs/plugin-legacy'
 import viteCompression from 'vite-plugin-compression'
@@ -28,6 +29,7 @@ export function getPlugins(
   base?: string
 ): PluginOption[] {
   const buildTime = dayjs().format('YYYY-MM-DD HH:mm:ss')
+  const pluginFromCli = (cliKey: string) => process.env[cliKey] === 'true'
 
   const plugins: PluginOption[] = [
     vue(),
@@ -65,11 +67,11 @@ export function getPlugins(
     })
   ]
 
-  const isTrue = (value: string) => value === 'true'
-
   // 开发环境
   if (!isBuild) {
-    if (isTrue(viteEnv.VITE_DEV_TOOL)) {
+    plugins.push(setupMockPlugin(false))
+
+    if (pluginFromCli('CLI_VITE_DEVTOOLS')) {
       plugins.push(
         vueDevTools({
           launchEditor: 'cursor'
@@ -77,10 +79,10 @@ export function getPlugins(
       )
     }
 
-    plugins.push(setupMockPlugin(false))
-  }
-
-  if (isBuild) {
+    if (pluginFromCli('CLI_VITE_INSPECT')) {
+      plugins.push(Inspect())
+    }
+  } else {
     // 兼容旧版浏览器（自动读取 .browserslistrc 配置）
     plugins.push(
       legacy({
@@ -130,7 +132,7 @@ export function getPlugins(
     )
 
     // 按需启用打包体积分析
-    if (isTrue(viteEnv.VITE_VISUALIZER_TOOL)) {
+    if (pluginFromCli('CLI_VITE_VISUALIZER')) {
       plugins.push(
         visualizer({
           emitFile: true,

@@ -47,6 +47,11 @@ export default defineConfig((env: ConfigEnv) => {
           rewrite: (path) => path.replace(/^\/api/, '')
         }
       }
+    },
+    preview: {
+      host: '127.0.0.1',
+      port: 3510, // 或 4180 等未占用端口
+      strictPort: true
     }
   }
   return userConfig
