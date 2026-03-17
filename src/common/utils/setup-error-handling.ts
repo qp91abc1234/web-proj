@@ -3,6 +3,7 @@ import { ElMessage } from 'element-plus'
 
 import { logger } from './logger'
 import type { AxiosError } from 'axios'
+import { NET_ERR_CODE } from '../constants/net-err-code'
 
 /**
  * 标记是否已经安装过错误处理
@@ -122,7 +123,7 @@ export function setupErrorHandling(app: App<Element>) {
 
       if (!responseData?.message) {
         // 如果没有后端消息，根据错误类型给出默认提示
-        if (axiosError.code === 'ECONNABORTED') {
+        if (axiosError.code === NET_ERR_CODE.ECONNABORTED) {
           message = '请求超时，请检查网络'
         } else {
           message = '服务器开小差了，请稍后重试'

@@ -1,6 +1,7 @@
 import axios, { type AxiosInstance, type AxiosError, type AxiosResponse } from 'axios'
 
 import { useUserStore } from '@/store/modules/user-store'
+import { NET_ERR_CODE } from '@/common/constants/net-err-code'
 
 /**
  * 刷新 token 队列中的任务
@@ -66,7 +67,7 @@ instance.interceptors.response.use(
     const { status, data } = response
 
     // Token 过期 - 续签
-    if (status === 401 && data.code === 'TOKEN_EXPIRED') {
+    if (status === 401 && data.code === NET_ERR_CODE.TOKEN_EXPIRED) {
       if (!refreshing) {
         refreshing = true
         userStore
@@ -94,7 +95,7 @@ instance.interceptors.response.use(
     }
 
     // Token 无效 - 清除 token，跳转登录
-    if (status === 401 && data.code === 'TOKEN_INVALID') {
+    if (status === 401 && data.code === NET_ERR_CODE.TOKEN_INVALID) {
       userStore.logout()
     }
 

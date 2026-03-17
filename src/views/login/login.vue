@@ -5,6 +5,8 @@ import { Lock, User, Refresh, Check } from '@element-plus/icons-vue'
 import { type FormRules, type FormInstance, ElMessage } from 'element-plus'
 import { useUserStore } from '@/store/modules/user-store'
 import { getCaptcha } from '@/common/api/auth'
+import type { AxiosError } from 'axios'
+import { NET_ERR_CODE } from '@/common/constants/net-err-code'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -72,9 +74,12 @@ const handleLogin = async (formEl: FormInstance | undefined) => {
         })
         ElMessage.success('登录成功')
         router.replace('/home')
-      } catch (error: any) {
-        // 登录失败时刷新验证码
-        fetchCaptcha()
+      } catch (e: any) {
+        const error = e as AxiosError<{ code: string; message: string }>
+        if (error.response?.data?.code === NET_ERR_CODE.CAPTCHA_EXPIRED) {
+          // 验证码过期时刷新验证码
+          fetchCaptcha()
+        }
         const errorMessage =
           error?.response?.data?.message || error?.message || '登录失败，请检查用户名、密码和验证码'
         ElMessage.error(errorMessage)
